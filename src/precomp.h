@@ -16,3 +16,4 @@
 #include <iostream>
 #include <spdlog/spdlog.h>
 #include <set>
+#include <optional>

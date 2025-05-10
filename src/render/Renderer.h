@@ -6,6 +6,7 @@
 #include <string>
 
 #include "GLFW/glfw3.h"
+#include "window/Window.h"
 
 enum class RendererType {
     NONE,
@@ -17,9 +18,8 @@ enum class RendererType {
 
 class Renderer {
 public:
-    Renderer(): renderer(nullptr), rendererType(RendererType::NONE) {}
+    Renderer(Window *window): renderer(nullptr), rendererType(RendererType::NONE), window(window) {}
     virtual ~Renderer() = default;
-    virtual GLFWwindow *CreateWindow(std::string name_, int width_, int height_) = 0;
     virtual bool OnCreate() = 0;
     virtual void OnDestroy() = 0;
     virtual void Render() = 0;
@@ -29,5 +29,6 @@ public:
 protected:
     Renderer *renderer;
     RendererType rendererType;
+    Window *window;
 };
 

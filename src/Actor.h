@@ -1,7 +1,5 @@
 #pragma once
-#include <vulkan.h>
-#include <string>
-#include <vector>
+
 #include "ModelMatrixPushConstant.h"
 #include "VMath.h"
 #include "Collider.h"

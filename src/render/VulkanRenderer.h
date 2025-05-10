@@ -3,12 +3,9 @@
 //
 
 #pragma once
-#include <optional>
-#include <vector>
-#include <vulkan/vulkan.h>
-#include <GLFW/glfw3.h>
 
 #include "Renderer.h"
+#include "window/Window.h"
 
 const std::vector validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -32,9 +29,9 @@ struct QueueFamilyIndices {
     }
 };
 
-class VulkanRenderer : Renderer {
+class VulkanRenderer : public Renderer {
 public:
-    VulkanRenderer();
+    VulkanRenderer(Window *window);
     ~VulkanRenderer() override;
 
     VulkanRenderer(const VulkanRenderer &) = delete; /// Copy constructor
@@ -42,9 +39,10 @@ public:
     VulkanRenderer &operator=(const VulkanRenderer &) = delete; /// Copy operator
     VulkanRenderer &operator=(VulkanRenderer &&) = delete; /// Move operator
 
-    GLFWwindow* CreateGLFWWindow();
-
+    bool OnCreate();
+    void OnDestroy();
+    void Render();
 
 private:
-    GLFWwindow* window;
+    GLFWwindow *glfWwindow;
 };

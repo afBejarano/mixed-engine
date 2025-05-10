@@ -2,14 +2,15 @@
 // Created by andre on 13/04/2025.
 //
 #pragma once
-#include <string>
 
 #include "render/Renderer.h"
+#include "window/Window.h"
+#include "render/Scene.h"
 
 
 class SceneManager {
 public:
-    SceneManager();
+    SceneManager(RendererType render_type_);
     ~SceneManager();
     void Run();
     bool Initialize(std::string name_, int width_, int height_);
@@ -25,11 +26,12 @@ public:
         SCENE6 = 6
     };
 
-    void ChangeScene(SCENE_NUMBER scene);
+    void ChangeScene(SCENE_NUMBER scene_);
 
 private:
     RendererType renderType;
-    class Scene* currentScene;
+    Window* window;
+    Scene* currentScene;
     class Timer* timer;
 
     Renderer* renderer;
