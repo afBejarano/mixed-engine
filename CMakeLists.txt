@@ -22,7 +22,14 @@ FetchContent_Declare(
         GIT_SHALLOW TRUE
 )
 
-fetchcontent_makeavailable(glm glfw)
+FetchContent_Declare(
+        spdlog
+        GIT_REPOSITORY "https://github.com/gabime/spdlog.git"
+        GIT_TAG "v1.15.2"
+        GIT_SHALLOW TRUE
+)
+
+fetchcontent_makeavailable(glm glfw spdlog)
 
 add_executable(MixedEngine src/main.cpp
         src/SceneManager.cpp
@@ -30,6 +37,21 @@ add_executable(MixedEngine src/main.cpp
         src/render/Renderer.h
         src/render/VulkanRenderer.cpp
         src/render/VulkanRenderer.h
+        src/precomp.h
 )
 
-target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan)
+target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog)
+
+target_include_directories(MixedEngine PRIVATE "src")
+
+target_compile_features(MixedEngine PRIVATE cxx_std_20)
+
+target_precompile_headers(MixedEngine PRIVATE "src/precomp.h")
+
+file(GLOB_RECURSE ShaderSources CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/shaders/*.vert"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/shaders/*.frag"
+)
+
+#add_shaders(MixedEngine ${ShaderSources})
+#add_dependencies(MixedEngine VulkanEngineShaders)
