@@ -39,6 +39,11 @@ add_executable(MixedEngine src/main.cpp
         src/render/VulkanRenderer.cpp
         src/render/VulkanRenderer.h
         src/precomp.h
+        src/Actor.h
+        src/Camera.cpp
+        src/Camera.h
+        src/CameraPosition.h
+        src/Collider.h
 )
 
 target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog)
