@@ -48,6 +48,8 @@ add_executable(MixedEngine src/main.cpp
         src/window/Window.h
         src/render/Scene.cpp
         src/render/Scene.h
+        src/Utilities.cpp
+        src/Utilities.h
 )
 
 target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog)

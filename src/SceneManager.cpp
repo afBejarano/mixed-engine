@@ -21,7 +21,7 @@ void SceneManager::Run() {
 }
 
 bool SceneManager::Initialize(std::string name_, int width_, int height_) {
-    window = new Window(name_.c_str(), width_, height_, true);
+    window = new Window(name_.c_str(), width_, height_, false);
     renderer = new VulkanRenderer(window);
     currentScene = new Scene(renderer);
     return true;

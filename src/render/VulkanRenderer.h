@@ -29,6 +29,16 @@ struct QueueFamilyIndices {
     }
 };
 
+struct SwapchainSupportCapabilities {
+    VkSurfaceCapabilitiesKHR capabilities_khr{};
+    std::vector<VkSurfaceFormatKHR> formats_khr{};
+    std::vector<VkPresentModeKHR> present_modes_khr{};
+
+    [[nodiscard]] bool IsValid() const {
+        return !formats_khr.empty() && !present_modes_khr.empty();
+    }
+};
+
 class VulkanRenderer : public Renderer {
 public:
     VulkanRenderer(Window *window);
@@ -39,10 +49,22 @@ public:
     VulkanRenderer &operator=(const VulkanRenderer &) = delete; /// Copy operator
     VulkanRenderer &operator=(VulkanRenderer &&) = delete; /// Move operator
 
-    bool OnCreate();
-    void OnDestroy();
-    void Render();
+    bool OnCreate() override;
+    void OnDestroy() override;
+    void Render() override;
 
 private:
-    GLFWwindow *glfWwindow;
+    void InitializeVulkan();
+    void SetupDebugMessenger();
+    static bool AreAllLayersSupported(const std::vector<const char *> &extensions);
+    void CreateInstance();
+    static bool AreAllExtensionsSupported(const std::vector<const char *> &extensions);
+    std::vector<const char *> GetRequiredInstanceExtensions() const;
+    static std::vector<VkLayerProperties> GetSupportedValidationLayers();
+    static std::vector<VkExtensionProperties> GetSupportedInstanceExtensions();
+    static std::vector<const char *> GetSuggestedInstanceExtensions();
+
+    bool validation_ = false;
+    VkInstance vk_instance_ = VK_NULL_HANDLE;
+    VkDebugUtilsMessengerEXT debug_messenger_ = VK_NULL_HANDLE;
 };
