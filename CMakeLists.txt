@@ -50,6 +50,9 @@ add_executable(MixedEngine src/main.cpp
         src/render/Scene.h
         src/Utilities.cpp
         src/Utilities.h
+        src/window/Timer.cpp
+        src/window/Timer.h
+        src/Component.h
 )
 
 target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog)

@@ -169,6 +169,9 @@ void VulkanRenderer::CreateInstance() {
         create_info.pNext = &debug_create_info;
         create_info.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         create_info.ppEnabledLayerNames = validationLayers.data();
+    } else {
+        create_info.enabledLayerCount = 0;
+        create_info.ppEnabledLayerNames = nullptr;
     }
 
     VkResult result = vkCreateInstance(&create_info, nullptr, &vk_instance_);
