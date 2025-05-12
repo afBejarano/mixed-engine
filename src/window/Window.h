@@ -10,7 +10,8 @@ class Window {
 public:
     Window(const char* title, int width, int height, bool fullscreen);
     ~Window();
-    [[nodiscard]] GLFWwindow *getGLFWwindow() const {return window;};
+    [[nodiscard]] GLFWwindow *getGLFWwindow() const {return window;}
+    [[nodiscard]] glm::ivec2 GetFrameBufferSize() const;;
     static void processInput(GLFWwindow *window);
     GLFWwindow *GetWindow();
 private:

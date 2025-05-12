@@ -34,6 +34,13 @@ Window::~Window() {
     glfwTerminate();
 }
 
+glm::ivec2 Window::GetFrameBufferSize() const {
+    int real_width;
+    int real_height;
+    glfwGetWindowSize(window, &real_width, &real_height);
+    return {real_width, real_height};
+}
+
 void Window::processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);

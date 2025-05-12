@@ -24,6 +24,7 @@ constexpr bool enableValidationLayers = true;
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
+
     [[nodiscard]] bool isComplete() const {
         return graphicsFamily.has_value() && presentFamily.has_value();
     }
@@ -41,7 +42,7 @@ struct SwapchainSupportCapabilities {
 
 class VulkanRenderer : public Renderer {
 public:
-    VulkanRenderer(Window *window);
+    explicit VulkanRenderer(Window *window);
     ~VulkanRenderer() override;
 
     VulkanRenderer(const VulkanRenderer &) = delete; /// Copy constructor
@@ -54,12 +55,25 @@ public:
     void Render() override;
 
 private:
+    void PickPhysicalDevice();
+    void CreateLogicalDeviceAndQueues();
+    static VkSurfaceFormatKHR ChooseSwapchainSurfaceFormat(std::vector<VkSurfaceFormatKHR> formats);
+    static VkPresentModeKHR ChooseSwapchainPresentMode(std::vector<VkPresentModeKHR> present_modes);
+    VkExtent2D ChooseSwapchainExtent(const VkSurfaceCapabilitiesKHR &capabilities) const;
+    static std::uint32_t ChooseImageCount(const VkSurfaceCapabilitiesKHR &capabilities);
+    [[nodiscard]] std::vector<VkPhysicalDevice> GetPhysicalDevices() const;
     void InitializeVulkan();
     void SetupDebugMessenger();
     static bool AreAllLayersSupported(const std::vector<const char *> &extensions);
     void CreateInstance();
+    void CreateSurface();
+    QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) const;
+    SwapchainSupportCapabilities FindSwapChainSupport(VkPhysicalDevice device) const;
+    static std::vector<VkExtensionProperties> GetDeviceAvailableExtensions(VkPhysicalDevice device);
+    static bool AreAllDeviceExtensionsSupported(VkPhysicalDevice device);
+    bool IsDeviceSuitable(VkPhysicalDevice device) const;
     static bool AreAllExtensionsSupported(const std::vector<const char *> &extensions);
-    std::vector<const char *> GetRequiredInstanceExtensions() const;
+    [[nodiscard]] std::vector<const char *> GetRequiredInstanceExtensions() const;
     static std::vector<VkLayerProperties> GetSupportedValidationLayers();
     static std::vector<VkExtensionProperties> GetSupportedInstanceExtensions();
     static std::vector<const char *> GetSuggestedInstanceExtensions();
@@ -67,4 +81,10 @@ private:
     bool validation_ = false;
     VkInstance vk_instance_ = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT debug_messenger_ = VK_NULL_HANDLE;
+    VkSurfaceKHR vk_surface_ = VK_NULL_HANDLE;
+    VkPhysicalDevice vk_physical_device_ = VK_NULL_HANDLE;
+    VkDevice vk_device_ = VK_NULL_HANDLE;
+    VkQueue vk_graphics_queue_ = VK_NULL_HANDLE;
+    VkQueue vk_present_queue_ = VK_NULL_HANDLE;
+
 };
