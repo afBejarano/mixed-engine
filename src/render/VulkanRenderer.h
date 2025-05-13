@@ -59,8 +59,11 @@ private:
     void CreateLogicalDeviceAndQueues();
     static VkSurfaceFormatKHR ChooseSwapchainSurfaceFormat(std::vector<VkSurfaceFormatKHR> formats);
     static VkPresentModeKHR ChooseSwapchainPresentMode(std::vector<VkPresentModeKHR> present_modes);
-    VkExtent2D ChooseSwapchainExtent(const VkSurfaceCapabilitiesKHR &capabilities) const;
+    [[nodiscard]] VkExtent2D ChooseSwapchainExtent(const VkSurfaceCapabilitiesKHR &capabilities) const;
     static std::uint32_t ChooseImageCount(const VkSurfaceCapabilitiesKHR &capabilities);
+    void CreateSwapChain();
+    VkImageView CreateImageView(VkImage image, VkFormat format) const;
+    void CreateImageViews();
     [[nodiscard]] std::vector<VkPhysicalDevice> GetPhysicalDevices() const;
     void InitializeVulkan();
     void SetupDebugMessenger();
@@ -81,10 +84,15 @@ private:
     bool validation_ = false;
     VkInstance vk_instance_ = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT debug_messenger_ = VK_NULL_HANDLE;
-    VkSurfaceKHR vk_surface_ = VK_NULL_HANDLE;
     VkPhysicalDevice vk_physical_device_ = VK_NULL_HANDLE;
     VkDevice vk_device_ = VK_NULL_HANDLE;
     VkQueue vk_graphics_queue_ = VK_NULL_HANDLE;
     VkQueue vk_present_queue_ = VK_NULL_HANDLE;
-
+    VkSurfaceKHR vk_surface_ = VK_NULL_HANDLE;
+    VkSwapchainKHR vk_swapchain_ = VK_NULL_HANDLE;
+    VkSurfaceFormatKHR vk_surface_format_{};
+    VkPresentModeKHR vk_present_mode_{};
+    VkExtent2D vk_extent_{};
+    std::vector<VkImage> vk_swapchain_images_;
+    std::vector<VkImageView> vk_swapchain_image_views_;
 };

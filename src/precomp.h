@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <string>
+#include <fstream>
 #include <string_view>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
