@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 20)
 find_package(Vulkan REQUIRED)
 
 include(cmake/Shaders.cmake)
+
 include(FetchContent)
 
 FetchContent_Declare(
@@ -30,7 +31,14 @@ FetchContent_Declare(
         GIT_SHALLOW TRUE
 )
 
-fetchcontent_makeavailable(glm glfw spdlog)
+FetchContent_Declare(
+        microsoft-gsl
+        GIT_REPOSITORY "https://github.com/microsoft/GSL.git"
+        GIT_TAG "v4.2.0"
+        GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(glm glfw spdlog microsoft-gsl)
 
 add_executable(MixedEngine src/main.cpp
         src/SceneManager.cpp
@@ -56,9 +64,10 @@ add_executable(MixedEngine src/main.cpp
         #src/Actor.cpp
         src/Debug.cpp
         src/Debug.h
+        src/vertex.h
 )
 
-target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog)
+target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog Microsoft.GSL::GSL)
 
 target_include_directories(MixedEngine PRIVATE "src")
 
@@ -71,5 +80,5 @@ file(GLOB_RECURSE ShaderSources CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/src/shaders/*.frag"
 )
 
-#add_shaders(MixedEngine ${ShaderSources})
-#add_dependencies(MixedEngine VulkanEngineShaders)
+add_shaders(MixedEngineShaders ${ShaderSources})
+add_dependencies(MixedEngine MixedEngineShaders)

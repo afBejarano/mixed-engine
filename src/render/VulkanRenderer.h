@@ -64,6 +64,11 @@ private:
     void CreateSwapChain();
     VkImageView CreateImageView(VkImage image, VkFormat format) const;
     void CreateImageViews();
+    VkShaderModule CreateShaderModule(std::vector<std::uint8_t> buffer);
+    void CreateGraphicsPipeline();
+    VkViewport GetViewport() const;
+    VkRect2D GetScissor() const;
+    void CreateRenderPass();
     [[nodiscard]] std::vector<VkPhysicalDevice> GetPhysicalDevices() const;
     void InitializeVulkan();
     void SetupDebugMessenger();
@@ -83,7 +88,7 @@ private:
 
     bool validation_ = false;
     VkInstance vk_instance_ = VK_NULL_HANDLE;
-    VkDebugUtilsMessengerEXT debug_messenger_ = VK_NULL_HANDLE;
+    VkDebugUtilsMessengerEXT vk_debug_messenger_ = VK_NULL_HANDLE;
     VkPhysicalDevice vk_physical_device_ = VK_NULL_HANDLE;
     VkDevice vk_device_ = VK_NULL_HANDLE;
     VkQueue vk_graphics_queue_ = VK_NULL_HANDLE;
@@ -95,4 +100,9 @@ private:
     VkExtent2D vk_extent_{};
     std::vector<VkImage> vk_swapchain_images_;
     std::vector<VkImageView> vk_swapchain_image_views_;
+    VkPipelineLayout vk_pipeline_layout_ = VK_NULL_HANDLE;
+    VkRenderPass vk_render_pass_ = VK_NULL_HANDLE;
+    VkPipeline vk_pipeline_ = VK_NULL_HANDLE;
+    VkDescriptorSetLayout vk_uniform_set_layout_ = VK_NULL_HANDLE;
+    VkDescriptorSetLayout vk_texture_set_layout_ = VK_NULL_HANDLE;
 };

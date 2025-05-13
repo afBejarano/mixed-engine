@@ -17,9 +17,9 @@ function(add_shaders TARGET_NAME)
         list(APPEND SHADER_COMMANDS Vulkan::glslc)
         list(APPEND SHADER_COMMANDS "${SHADER_SOURCE}")
         list(APPEND SHADER_COMMANDS "-o")
-        list(APPEND SHADER_COMMANDS "${CMAKE_CURRENT_BINARY_DIR}/shaders/${SHADER_NAME}.spv")
+        list(APPEND SHADER_COMMANDS "${CMAKE_CURRENT_BINARY_DIR}/${SHADER_NAME}.spv")
         # PRODUCTS
-        list(APPEND SHADER_PRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/shaders/${SHADER_NAME}.spv")
+        list(APPEND SHADER_PRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/${SHADER_NAME}.spv")
     endforeach ()
 
     add_custom_target(${TARGET_NAME} ALL

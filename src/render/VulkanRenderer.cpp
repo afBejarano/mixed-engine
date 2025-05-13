@@ -3,8 +3,8 @@
 //
 
 #include "VulkanRenderer.h"
-
 #include "Utilities.h"
+#include "vertex.h"
 
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(VkInstance instance,
                                                               const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
@@ -68,7 +68,7 @@ void VulkanRenderer::SetupDebugMessenger() {
     }
 
     VkDebugUtilsMessengerCreateInfoEXT info = GetCreateDebugMessengerInfo();
-    VkResult result = vkCreateDebugUtilsMessengerEXT(vk_instance_, &info, nullptr, &debug_messenger_);
+    VkResult result = vkCreateDebugUtilsMessengerEXT(vk_instance_, &info, nullptr, &vk_debug_messenger_);
     if (result != VK_SUCCESS) spdlog::error("Failed to create debug messenger");
 }
 
@@ -470,6 +470,175 @@ void VulkanRenderer::CreateImageViews() {
     }
 }
 
+VkShaderModule VulkanRenderer::CreateShaderModule(std::vector<std::uint8_t> buffer) {
+    if (buffer.empty()) return VK_NULL_HANDLE;
+
+    VkShaderModuleCreateInfo vk_shader_module_info = {
+            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr, 0, buffer.size(),
+            reinterpret_cast<const uint32_t*>(buffer.data())
+        };
+
+    VkShaderModule vk_shader_module;
+    VkResult result = vkCreateShaderModule(vk_device_, &vk_shader_module_info, nullptr, &vk_shader_module);
+    if (result != VK_SUCCESS) {
+        spdlog::error("Failed to create shader module!");
+        return VK_NULL_HANDLE;
+    }
+
+    return vk_shader_module;
+}
+
+void VulkanRenderer::CreateGraphicsPipeline() {
+    std::vector<std::uint8_t> vertex_data = ReadFile("./assets/shaders/basic.vert.spv");
+    VkShaderModule vertex_shader = CreateShaderModule(vertex_data);
+    gsl::final_action _destroy_vertex([this, vertex_shader]() {
+        vkDestroyShaderModule(vk_device_, vertex_shader, nullptr);
+    });
+
+    std::vector<std::uint8_t> fragment_data = ReadFile("./assets/shaders/basic.frag.spv");
+    VkShaderModule fragment_shader = CreateShaderModule(fragment_data);
+    gsl::final_action _destroy_fragment([this, fragment_shader]() {
+        vkDestroyShaderModule(vk_device_, fragment_shader, nullptr);
+    });
+
+    if (vertex_shader != VK_NULL_HANDLE || fragment_shader != VK_NULL_HANDLE) {
+        spdlog::error("Failed finding shaders!");
+        std::exit(EXIT_FAILURE);
+    }
+
+    VkPipelineShaderStageCreateInfo vertex_info = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        nullptr, 0, VK_SHADER_STAGE_VERTEX_BIT, vertex_shader, "main"};
+
+    VkPipelineShaderStageCreateInfo fragment_info = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        nullptr, 0, VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader, "main"};
+
+    std::array<VkPipelineShaderStageCreateInfo, 2> stage_infos[] = {vertex_info, fragment_info};
+
+    std::array<VkDynamicState, 2> dynamic_states = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
+    VkPipelineDynamicStateCreateInfo dynamic_state_info = {VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr, 0, dynamic_states.size(), dynamic_states.data()};
+
+    VkViewport viewport = GetViewport();
+    VkRect2D scissor = GetScissor();
+
+    VkPipelineViewportStateCreateInfo viewport_state_info = {VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        nullptr, 0, 1, &viewport, 1, &scissor};
+
+    auto vertex_binding_description = Vertex::GetBindingDescription();
+    auto vertex_attribute_description = Vertex::GetAttributeDescriptions();
+
+    VkPipelineVertexInputStateCreateInfo vertex_input_info = {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        nullptr, 0, 1, &vertex_binding_description,
+        vertex_attribute_description.size(), vertex_attribute_description.data()};
+
+    VkPipelineInputAssemblyStateCreateInfo input_assembly_info = {VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        nullptr, 0, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE};
+
+    VkPipelineRasterizationStateCreateInfo rasterization_state_info = {};
+    rasterization_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterization_state_info.depthClampEnable = VK_FALSE;
+    rasterization_state_info.rasterizerDiscardEnable = VK_FALSE;
+    rasterization_state_info.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterization_state_info.lineWidth = 1.0f;
+    rasterization_state_info.cullMode = VK_CULL_MODE_NONE;
+    rasterization_state_info.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterization_state_info.depthBiasEnable = VK_FALSE;
+
+    VkPipelineMultisampleStateCreateInfo multisample_info = {VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        nullptr, 0, VK_SAMPLE_COUNT_1_BIT, VK_FALSE};
+
+    VkPipelineColorBlendAttachmentState color_blend_attachment = {};
+    color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+        VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    color_blend_attachment.blendEnable = VK_TRUE;
+    color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+    color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+    VkPipelineColorBlendStateCreateInfo color_blend_state = {VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        nullptr, 0, VK_FALSE, VK_LOGIC_OP_NO_OP, 1, &color_blend_attachment};
+
+    VkPipelineLayoutCreateInfo pipeline_layout_info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+
+    VkPushConstantRange push_constant_range = {VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4)};
+
+    pipeline_layout_info.pushConstantRangeCount = 1;
+    pipeline_layout_info.pPushConstantRanges = &push_constant_range;
+
+    std::array<VkDescriptorSetLayout, 2> set_layouts = {vk_uniform_set_layout_, vk_texture_set_layout_};
+    pipeline_layout_info.setLayoutCount = set_layouts.size();
+    pipeline_layout_info.pSetLayouts = set_layouts.data();
+
+    VkResult result = vkCreatePipelineLayout(vk_device_, &pipeline_layout_info, nullptr, &vk_pipeline_layout_);
+    if (result != VK_SUCCESS) {
+        spdlog::error("failed to create pipeline layout!");
+        std::exit(EXIT_FAILURE);
+    }
+
+    VkGraphicsPipelineCreateInfo pipeline_info = {};
+    pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipeline_info.stageCount = stage_infos->size();
+    pipeline_info.pStages = stage_infos->data();
+    pipeline_info.pVertexInputState = &vertex_input_info;
+    pipeline_info.pInputAssemblyState = &input_assembly_info;
+    pipeline_info.pViewportState = &viewport_state_info;
+    pipeline_info.pRasterizationState = &rasterization_state_info;
+    pipeline_info.pMultisampleState = &multisample_info;
+    pipeline_info.pDepthStencilState = nullptr;
+    pipeline_info.pColorBlendState = &color_blend_state;
+    pipeline_info.pDynamicState = &dynamic_state_info;
+    pipeline_info.layout = vk_pipeline_layout_;
+    pipeline_info.renderPass = vk_render_pass_;
+    pipeline_info.subpass = 0;
+
+    VkResult pipeline_result = vkCreateGraphicsPipelines(vk_device_, VK_NULL_HANDLE,
+        1, &pipeline_info,nullptr, &vk_pipeline_);
+    if (pipeline_result != VK_SUCCESS) {
+        spdlog::error("failed to create pipeline!");
+        std::exit(EXIT_FAILURE);
+    }
+}
+
+VkViewport VulkanRenderer::GetViewport() const {
+    const VkViewport viewport = {0, 0, static_cast<float>(vk_extent_.width),
+        static_cast<float>(vk_extent_.height), 0.0f, 1.0f};
+    return viewport;
+}
+
+VkRect2D VulkanRenderer::GetScissor() const {
+    const VkRect2D scissor = {0, 0, vk_extent_};
+    return scissor;
+}
+
+void VulkanRenderer::CreateRenderPass() {
+    VkAttachmentDescription color_attachment = {};
+    color_attachment.format = vk_surface_format_.format;
+    color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference color_attachment_ref = {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+
+    VkSubpassDescription subpass = {0, VK_PIPELINE_BIND_POINT_GRAPHICS, 0,
+        nullptr, 1, &color_attachment_ref};
+
+    VkRenderPassCreateInfo render_pass_info = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, nullptr,
+        0, 1, &color_attachment, 1, &subpass};
+
+    VkResult result = vkCreateRenderPass(vk_device_, &render_pass_info, nullptr, &vk_render_pass_);
+    if (result != VK_SUCCESS) {
+        spdlog::error("failed to create render pass!");
+        std::exit(EXIT_FAILURE);
+    }
+}
 
 VulkanRenderer::VulkanRenderer(Window* window): Renderer(window) {
 #if !defined(NDEBUG)
@@ -495,8 +664,8 @@ void VulkanRenderer::OnDestroy() {
         if (vk_surface_ != VK_NULL_HANDLE)
             vkDestroySurfaceKHR(vk_instance_, vk_surface_, VK_NULL_HANDLE);
 
-        if (debug_messenger_ != VK_NULL_HANDLE)
-            vkDestroyDebugUtilsMessengerEXT(vk_instance_, debug_messenger_, VK_NULL_HANDLE);
+        if (vk_debug_messenger_ != VK_NULL_HANDLE)
+            vkDestroyDebugUtilsMessengerEXT(vk_instance_, vk_debug_messenger_, VK_NULL_HANDLE);
 
         vkDestroyInstance(vk_instance_, VK_NULL_HANDLE);
     }
@@ -513,4 +682,7 @@ void VulkanRenderer::InitializeVulkan() {
     CreateLogicalDeviceAndQueues();
     CreateSwapChain();
     CreateImageViews();
+    CreateRenderPass();
+    CreateGraphicsPipeline();
+
 }
