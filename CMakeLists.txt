@@ -93,3 +93,5 @@ file(GLOB_RECURSE ShaderSources CONFIGURE_DEPENDS
 
 add_shaders(MixedEngineShaders ${ShaderSources})
 add_dependencies(MixedEngine MixedEngineShaders)
+
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/src/assets/textures/paving-stones.jpg" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
