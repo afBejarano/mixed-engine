@@ -22,3 +22,4 @@
 #include <optional>
 #include <utility>
 #include <algorithm>
+#include <stb_image.h>

@@ -8,6 +8,7 @@
 #include "window/Window.h"
 #include "Vertex.h"
 #include "BufferHandle.h"
+#include "TextureHandle.h"
 #include "UniformTransformations.h"
 
 const std::vector validationLayers = {
@@ -76,13 +77,12 @@ private:
     void CreateCommandPool();
     void CreateCommandBuffer();
     void BeginCommands() const;
-    void RenderTriangle() const;
     void EndCommands() const;
     void CreateSignals();
     bool BeginFrame();
     void EndFrame();
     std::uint32_t FindMemoryType(std::uint32_t memory_type_bits, VkMemoryPropertyFlags properties) const;
-    BufferHandle CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) const;
+    BufferHandle CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
     BufferHandle CreateIndexBuffer(std::vector<uint32_t> indices);
     BufferHandle CreateVertexBuffer(std::vector<Vertex> vertices);
     void DestroyBuffer(BufferHandle buffer_handle) const;
@@ -97,6 +97,13 @@ private:
     void CreateDescriptorSetLayouts();
     void CreateDescriptorPools();
     void CreateDescriptorSets();
+    void CreateTextureSampler();
+    TextureHandle CreateTexture(const char* path);
+    void DestroyTexture(TextureHandle handle);
+    void SetTexture(TextureHandle handle);
+    void TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
+    void CopyBufferToImage(VkBuffer buffer, VkImage image, glm::vec2 image_size);
+    TextureHandle CreateImage(glm::vec2 image_size, VkBufferUsageFlags usage_flags, VkMemoryPropertyFlags property_flags);
     void RecreateSwapchain();
     void CleanupSwapchain() const;
     [[nodiscard]] std::vector<VkPhysicalDevice> GetPhysicalDevices() const;
@@ -148,10 +155,6 @@ private:
 
     std::uint32_t current_image_index_ = 0;
 
-    VkDescriptorSetLayout vk_descriptor_set_layout_ = VK_NULL_HANDLE;
-    VkDescriptorPool vk_descriptor_pool_ = VK_NULL_HANDLE;
-    VkDescriptorSet vk_descriptor_set_ = VK_NULL_HANDLE;
-
     VkDescriptorSetLayout vk_uniform_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorPool vk_uniform_pool_ = VK_NULL_HANDLE;
     VkDescriptorSet vk_uniform_set_ = VK_NULL_HANDLE;
@@ -161,4 +164,15 @@ private:
     VkDescriptorSetLayout vk_texture_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorPool vk_texture_pool_ = VK_NULL_HANDLE;
     VkSampler vk_texture_sampler_ = VK_NULL_HANDLE;
+
+    std::vector<Vertex> vertices = {
+        Vertex{glm::vec3{0.0f, -0.5f, 0.0f}, glm::vec3{1.0f, 0.0f, 0.0f}},
+        Vertex{glm::vec3{0.5f, 0.5f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f}},
+        Vertex{glm::vec3{-0.5f, 0.5f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}}
+    };
+    BufferHandle buffer = CreateVertexBuffer(vertices);
+    std::vector<std::uint32_t> indices = {0, 1, 2};
+    BufferHandle index_buffer = CreateIndexBuffer(indices);
+
+    TextureHandle texture = CreateTexture("assets/textures/paving-stones.jpg");
 };

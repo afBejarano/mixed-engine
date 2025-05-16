@@ -73,6 +73,9 @@ add_executable(MixedEngine ${MixedEngineSources}
         src/vertex.h
         src/BufferHandle.h
         src/UniformTransformations.h
+        src/TextureHandle.h
+        src/stb_image.cpp
+        src/stb_image.h
 )
 
 target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog Microsoft.GSL::GSL)
