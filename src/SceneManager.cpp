@@ -17,6 +17,7 @@ SceneManager::~SceneManager() {
 void SceneManager::Run() {
     while (!glfwWindowShouldClose(window->getGLFWwindow())) {
         glfwPollEvents();
+        renderer->Render();
     }
 }
 

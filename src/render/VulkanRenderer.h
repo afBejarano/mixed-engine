@@ -6,6 +6,8 @@
 
 #include "Renderer.h"
 #include "window/Window.h"
+#include "Vertex.h"
+#include "BufferHandle.h"
 
 const std::vector validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -64,11 +66,24 @@ private:
     void CreateSwapChain();
     VkImageView CreateImageView(VkImage image, VkFormat format) const;
     void CreateImageViews();
-    VkShaderModule CreateShaderModule(std::vector<std::uint8_t> buffer);
+    VkShaderModule CreateShaderModule(const std::vector<std::uint8_t>& buffer) const;
     void CreateGraphicsPipeline();
     VkViewport GetViewport() const;
     VkRect2D GetScissor() const;
     void CreateRenderPass();
+    void CreateFramebuffers();
+    void CreateCommandPool();
+    void CreateCommandBuffer();
+    void BeginCommands() const;
+    void RenderTriangle() const;
+    void EndCommands() const;
+    void CreateSignals();
+    bool BeginFrame();
+    void EndFrame();
+    std::uint32_t FindMemoryType(std::uint32_t memory_type_bits, VkMemoryPropertyFlags properties) const;
+    BufferHandle CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) const;
+    void RecreateSwapchain();
+    void CleanupSwapchain() const;
     [[nodiscard]] std::vector<VkPhysicalDevice> GetPhysicalDevices() const;
     void InitializeVulkan();
     void SetupDebugMessenger();
@@ -87,12 +102,15 @@ private:
     static std::vector<const char *> GetSuggestedInstanceExtensions();
 
     bool validation_ = false;
+
     VkInstance vk_instance_ = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT vk_debug_messenger_ = VK_NULL_HANDLE;
+
     VkPhysicalDevice vk_physical_device_ = VK_NULL_HANDLE;
     VkDevice vk_device_ = VK_NULL_HANDLE;
     VkQueue vk_graphics_queue_ = VK_NULL_HANDLE;
     VkQueue vk_present_queue_ = VK_NULL_HANDLE;
+
     VkSurfaceKHR vk_surface_ = VK_NULL_HANDLE;
     VkSwapchainKHR vk_swapchain_ = VK_NULL_HANDLE;
     VkSurfaceFormatKHR vk_surface_format_{};
@@ -100,9 +118,22 @@ private:
     VkExtent2D vk_extent_{};
     std::vector<VkImage> vk_swapchain_images_;
     std::vector<VkImageView> vk_swapchain_image_views_;
+    std::vector<VkFramebuffer> vk_swapchain_framebuffers_;
+
     VkPipelineLayout vk_pipeline_layout_ = VK_NULL_HANDLE;
     VkRenderPass vk_render_pass_ = VK_NULL_HANDLE;
     VkPipeline vk_pipeline_ = VK_NULL_HANDLE;
+
+    VkCommandPool vk_command_pool_ = VK_NULL_HANDLE;
+    VkCommandBuffer vk_command_buffer_ = VK_NULL_HANDLE;
+
+    VkSemaphore vk_image_available_signal_ = VK_NULL_HANDLE;
+    VkSemaphore vk_render_finished_signal_ = VK_NULL_HANDLE;
+    VkFence vk_still_rendering_fence_ = VK_NULL_HANDLE;
+
+    std::uint32_t current_image_index_ = 0;
+
     VkDescriptorSetLayout vk_uniform_set_layout_ = VK_NULL_HANDLE;
+
     VkDescriptorSetLayout vk_texture_set_layout_ = VK_NULL_HANDLE;
 };

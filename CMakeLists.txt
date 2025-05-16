@@ -65,6 +65,7 @@ add_executable(MixedEngine src/main.cpp
         src/Debug.cpp
         src/Debug.h
         src/vertex.h
+        src/BufferHandle.h
 )
 
 target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog Microsoft.GSL::GSL)
