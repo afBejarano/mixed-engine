@@ -99,14 +99,15 @@ private:
     void CreateDescriptorSets();
     void CreateTextureSampler();
     TextureHandle CreateTexture(const char* path);
-    void DestroyTexture(TextureHandle handle);
-    void SetTexture(TextureHandle handle);
+    void DestroyTexture(TextureHandle &handle);
+    void SetTexture(TextureHandle &handle);
     void TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
     void CopyBufferToImage(VkBuffer buffer, VkImage image, glm::vec2 image_size);
     TextureHandle CreateImage(glm::vec2 image_size, VkBufferUsageFlags usage_flags, VkMemoryPropertyFlags property_flags);
     void RecreateSwapchain();
     void CleanupSwapchain() const;
     [[nodiscard]] std::vector<VkPhysicalDevice> GetPhysicalDevices() const;
+    void SetUpData();
     void InitializeVulkan();
     void SetupDebugMessenger();
     static bool AreAllLayersSupported(const std::vector<const char*>& extensions);
@@ -170,9 +171,9 @@ private:
         Vertex{glm::vec3{0.5f, 0.5f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f}},
         Vertex{glm::vec3{-0.5f, 0.5f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}}
     };
-    BufferHandle buffer = CreateVertexBuffer(vertices);
+    BufferHandle buffer = {};
     std::vector<std::uint32_t> indices = {0, 1, 2};
-    BufferHandle index_buffer = CreateIndexBuffer(indices);
+    BufferHandle index_buffer = {};
 
-    TextureHandle texture = CreateTexture("assets/textures/paving-stones.jpg");
+    TextureHandle texture = {};
 };
