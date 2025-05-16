@@ -5,8 +5,6 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
-#include <precomp.h>
-
 enum MessageType : unsigned short {
     TYPE_NONE = 0,
     TYPE_FATAL_ERROR,

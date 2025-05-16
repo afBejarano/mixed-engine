@@ -5,9 +5,8 @@
 #pragma once
 
 //#include "ModelMatrixPushConstant.h"
-#include "Collider.h"
-#include "precomp.h"
-#include "Component.h"
+#include "../src/Collider.h"
+#include "../src/Component.h"
 
 struct BufferMemory {
     VkBuffer bufferID;

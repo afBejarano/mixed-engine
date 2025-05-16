@@ -3,7 +3,7 @@
 //
 
 #include "Actor.h"
-#include "Debug.h"
+#include "../src/Debug.h"
 
 Actor::Actor(Component* parent_):Component(parent_) {}
 

@@ -40,14 +40,20 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(glm glfw spdlog microsoft-gsl)
 
-add_executable(MixedEngine src/main.cpp
+file(GLOB_RECURSE MixedEngineSources CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
+)
+
+add_executable(MixedEngine ${MixedEngineSources}
+        src/precomp.h
+        src/precomp.cpp
         src/SceneManager.cpp
         src/SceneManager.h
         src/render/Renderer.h
         src/render/VulkanRenderer.cpp
         src/render/VulkanRenderer.h
-        src/precomp.h
-        src/Actor.h
+        #src/Actor.h
         src/Camera.cpp
         src/Camera.h
         src/CameraPosition.h
@@ -66,6 +72,7 @@ add_executable(MixedEngine src/main.cpp
         src/Debug.h
         src/vertex.h
         src/BufferHandle.h
+        src/UniformTransformations.h
 )
 
 target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog Microsoft.GSL::GSL)

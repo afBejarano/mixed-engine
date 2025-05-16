@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#include "precomp.h"
+
 #include "Collider.h"
 
 class CameraPosition {

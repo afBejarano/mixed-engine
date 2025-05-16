@@ -8,14 +8,15 @@
 #include "window/Window.h"
 #include "Vertex.h"
 #include "BufferHandle.h"
+#include "UniformTransformations.h"
 
 const std::vector validationLayers = {
-    "VK_LAYER_KHRONOS_validation"
-};
+        "VK_LAYER_KHRONOS_validation"
+    };
 
 const std::vector deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
 
 #ifdef NDEBUG
 constexpr bool enableValidationLayers = false;
@@ -44,13 +45,13 @@ struct SwapchainSupportCapabilities {
 
 class VulkanRenderer : public Renderer {
 public:
-    explicit VulkanRenderer(Window *window);
+    explicit VulkanRenderer(Window* window);
     ~VulkanRenderer() override;
 
-    VulkanRenderer(const VulkanRenderer &) = delete; /// Copy constructor
-    VulkanRenderer(VulkanRenderer &&) = delete; /// Move constructor
-    VulkanRenderer &operator=(const VulkanRenderer &) = delete; /// Copy operator
-    VulkanRenderer &operator=(VulkanRenderer &&) = delete; /// Move operator
+    VulkanRenderer(const VulkanRenderer&) = delete; /// Copy constructor
+    VulkanRenderer(VulkanRenderer&&) = delete; /// Move constructor
+    VulkanRenderer& operator=(const VulkanRenderer&) = delete; /// Copy operator
+    VulkanRenderer& operator=(VulkanRenderer&&) = delete; /// Move operator
 
     bool OnCreate() override;
     void OnDestroy() override;
@@ -61,8 +62,8 @@ private:
     void CreateLogicalDeviceAndQueues();
     static VkSurfaceFormatKHR ChooseSwapchainSurfaceFormat(std::vector<VkSurfaceFormatKHR> formats);
     static VkPresentModeKHR ChooseSwapchainPresentMode(std::vector<VkPresentModeKHR> present_modes);
-    [[nodiscard]] VkExtent2D ChooseSwapchainExtent(const VkSurfaceCapabilitiesKHR &capabilities) const;
-    static std::uint32_t ChooseImageCount(const VkSurfaceCapabilitiesKHR &capabilities);
+    [[nodiscard]] VkExtent2D ChooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
+    static std::uint32_t ChooseImageCount(const VkSurfaceCapabilitiesKHR& capabilities);
     void CreateSwapChain();
     VkImageView CreateImageView(VkImage image, VkFormat format) const;
     void CreateImageViews();
@@ -82,12 +83,26 @@ private:
     void EndFrame();
     std::uint32_t FindMemoryType(std::uint32_t memory_type_bits, VkMemoryPropertyFlags properties) const;
     BufferHandle CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) const;
+    BufferHandle CreateIndexBuffer(std::vector<uint32_t> indices);
+    BufferHandle CreateVertexBuffer(std::vector<Vertex> vertices);
+    void DestroyBuffer(BufferHandle buffer_handle) const;
+    void RenderBuffer(BufferHandle buffer_handle, std::uint32_t vertex_count);
+    void RenderIndexedBuffer(BufferHandle verte_buffer_handle, BufferHandle index_buffer_handle,
+                             std::uint32_t index_count);
+    void SetModelMatrix(const glm::mat4& matrix) const;
+    void SetViewProjection(glm::mat4 matrix, glm::mat4 projection);
+    VkCommandBuffer BeginTransientCommandBuffer();
+    void EndTransientCommandBuffer(VkCommandBuffer command_buffer);
+    void CreateUniformBuffers();
+    void CreateDescriptorSetLayouts();
+    void CreateDescriptorPools();
+    void CreateDescriptorSets();
     void RecreateSwapchain();
     void CleanupSwapchain() const;
     [[nodiscard]] std::vector<VkPhysicalDevice> GetPhysicalDevices() const;
     void InitializeVulkan();
     void SetupDebugMessenger();
-    static bool AreAllLayersSupported(const std::vector<const char *> &extensions);
+    static bool AreAllLayersSupported(const std::vector<const char*>& extensions);
     void CreateInstance();
     void CreateSurface();
     QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) const;
@@ -95,11 +110,11 @@ private:
     static std::vector<VkExtensionProperties> GetDeviceAvailableExtensions(VkPhysicalDevice device);
     static bool AreAllDeviceExtensionsSupported(VkPhysicalDevice device);
     bool IsDeviceSuitable(VkPhysicalDevice device) const;
-    static bool AreAllExtensionsSupported(const std::vector<const char *> &extensions);
-    [[nodiscard]] std::vector<const char *> GetRequiredInstanceExtensions() const;
+    static bool AreAllExtensionsSupported(const std::vector<const char*>& extensions);
+    [[nodiscard]] std::vector<const char*> GetRequiredInstanceExtensions() const;
     static std::vector<VkLayerProperties> GetSupportedValidationLayers();
     static std::vector<VkExtensionProperties> GetSupportedInstanceExtensions();
-    static std::vector<const char *> GetSuggestedInstanceExtensions();
+    static std::vector<const char*> GetSuggestedInstanceExtensions();
 
     bool validation_ = false;
 
@@ -133,7 +148,17 @@ private:
 
     std::uint32_t current_image_index_ = 0;
 
+    VkDescriptorSetLayout vk_descriptor_set_layout_ = VK_NULL_HANDLE;
+    VkDescriptorPool vk_descriptor_pool_ = VK_NULL_HANDLE;
+    VkDescriptorSet vk_descriptor_set_ = VK_NULL_HANDLE;
+
     VkDescriptorSetLayout vk_uniform_set_layout_ = VK_NULL_HANDLE;
+    VkDescriptorPool vk_uniform_pool_ = VK_NULL_HANDLE;
+    VkDescriptorSet vk_uniform_set_ = VK_NULL_HANDLE;
+    BufferHandle uniform_buffer_;
+    void* uniform_buffer_location_;
 
     VkDescriptorSetLayout vk_texture_set_layout_ = VK_NULL_HANDLE;
+    VkDescriptorPool vk_texture_pool_ = VK_NULL_HANDLE;
+    VkSampler vk_texture_sampler_ = VK_NULL_HANDLE;
 };

@@ -599,14 +599,14 @@ void VulkanRenderer::CreateGraphicsPipeline() {
 
     VkPipelineLayoutCreateInfo pipeline_layout_info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
 
-    //VkPushConstantRange push_constant_range = {VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4)};
+    VkPushConstantRange push_constant_range = {VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4)};
 
-    //pipeline_layout_info.pushConstantRangeCount = 1;
-    //pipeline_layout_info.pPushConstantRanges = &push_constant_range;
+    pipeline_layout_info.pushConstantRangeCount = 1;
+    pipeline_layout_info.pPushConstantRanges = &push_constant_range;
 
     //std::array<VkDescriptorSetLayout, 2> set_layouts = {vk_uniform_set_layout_, vk_texture_set_layout_};
-    //pipeline_layout_info.setLayoutCount = set_layouts.size();
-    //pipeline_layout_info.pSetLayouts = set_layouts.data();
+    pipeline_layout_info.setLayoutCount = 1 /*set_layouts.size()*/;
+    pipeline_layout_info.pSetLayouts = &vk_descriptor_set_layout_ /*set_layouts.data()*/;
 
     VkResult result = vkCreatePipelineLayout(vk_device_, &pipeline_layout_info, nullptr, &vk_pipeline_layout_);
     if (result != VK_SUCCESS) {
@@ -754,10 +754,6 @@ void VulkanRenderer::BeginCommands() const {
     vkCmdSetScissor(vk_command_buffer_, 0, 1, &scissor);
 }
 
-void VulkanRenderer::RenderTriangle() const {
-    vkCmdDraw(vk_command_buffer_, 3, 1, 0, 0);
-}
-
 void VulkanRenderer::EndCommands() const {
     vkCmdEndRenderPass(vk_command_buffer_);
     VkResult result = vkEndCommandBuffer(vk_command_buffer_);
@@ -805,6 +801,7 @@ bool VulkanRenderer::BeginFrame() {
 
     vkResetFences(vk_device_, 1, &vk_still_rendering_fence_);
     BeginCommands();
+    SetModelMatrix(glm::mat4(1.0f));
 
     return true;
 }
@@ -865,7 +862,7 @@ BufferHandle VulkanRenderer::CreateBuffer(const VkDeviceSize size, VkBufferUsage
     BufferHandle buffer_handle = {};
 
     VkBufferCreateInfo buffer_info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, nullptr, 0,
-        size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE};
+        size, usage, VK_SHARING_MODE_EXCLUSIVE};
 
     VkResult result = vkCreateBuffer(vk_device_, &buffer_info, nullptr, &buffer_handle.buffer);
     if (result != VK_SUCCESS) throw std::runtime_error("failed to create vertex buffer!");
@@ -885,6 +882,195 @@ BufferHandle VulkanRenderer::CreateBuffer(const VkDeviceSize size, VkBufferUsage
     vkBindBufferMemory(vk_device_, buffer_handle.buffer, buffer_handle.memory, 0);
 
     return buffer_handle;
+}
+
+BufferHandle VulkanRenderer::CreateIndexBuffer(std::vector<uint32_t> indices) {
+    VkDeviceSize buffer_size = sizeof(uint32_t) * indices.size();
+    BufferHandle buffer_handle = CreateBuffer(
+        buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    void* data;
+    vkMapMemory(vk_device_, buffer_handle.memory, 0, buffer_size, 0, &data);
+    std::memcpy(data, indices.data(), buffer_size);
+    vkUnmapMemory(vk_device_, buffer_handle.memory);
+
+    BufferHandle gpu_handle = CreateBuffer(
+        buffer_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    VkCommandBuffer transient_commands = BeginTransientCommandBuffer();
+
+    VkBufferCopy copy_region = {0, 0, buffer_size};
+    vkCmdCopyBuffer(transient_commands, buffer_handle.buffer, gpu_handle.buffer, 1, &copy_region);
+
+    EndTransientCommandBuffer(transient_commands);
+
+    DestroyBuffer(buffer_handle);
+
+    return gpu_handle;
+}
+
+BufferHandle VulkanRenderer::CreateVertexBuffer(std::vector<Vertex> vertices) {
+    VkDeviceSize buffer_size = sizeof(Vertex) * vertices.size();
+    BufferHandle buffer_handle = CreateBuffer(
+        buffer_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    void* data;
+    vkMapMemory(vk_device_, buffer_handle.memory, 0, buffer_size, 0, &data);
+    std::memcpy(data, vertices.data(), buffer_size);
+    vkUnmapMemory(vk_device_, buffer_handle.memory);
+
+    BufferHandle gpu_handle = CreateBuffer(
+        buffer_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    VkCommandBuffer transient_commands = BeginTransientCommandBuffer();
+
+    VkBufferCopy copy_region = {0, 0, buffer_size};
+    vkCmdCopyBuffer(transient_commands, buffer_handle.buffer, gpu_handle.buffer, 1, &copy_region);
+
+    EndTransientCommandBuffer(transient_commands);
+
+    DestroyBuffer(buffer_handle);
+
+    return gpu_handle;
+}
+
+void VulkanRenderer::DestroyBuffer(const BufferHandle buffer_handle) const {
+    vkDeviceWaitIdle(vk_device_);
+    vkDestroyBuffer(vk_device_, buffer_handle.buffer, nullptr);
+    vkFreeMemory(vk_device_, buffer_handle.memory, nullptr);
+}
+
+void VulkanRenderer::RenderBuffer(BufferHandle buffer_handle, std::uint32_t vertex_count) {
+    VkDeviceSize offset = 0;
+    vkCmdBindDescriptorSets(vk_command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline_layout_, 0, 1,
+        &vk_descriptor_set_, 0, nullptr);
+    vkCmdBindVertexBuffers(vk_command_buffer_, 0, 1, &buffer_handle.buffer, &offset);
+    vkCmdDraw(vk_command_buffer_, vertex_count, 1, 0, 0);
+    SetModelMatrix(glm::mat4(1.0f));
+}
+
+void VulkanRenderer::RenderIndexedBuffer(BufferHandle verte_buffer_handle, BufferHandle index_buffer_handle, std::uint32_t index_count) {
+    VkDeviceSize offset = 0;
+    vkCmdBindDescriptorSets(vk_command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline_layout_, 0, 1,
+        &vk_descriptor_set_, 0, nullptr);
+    vkCmdBindVertexBuffers(vk_command_buffer_, 0, 1, &verte_buffer_handle.buffer, &offset);
+    vkCmdBindIndexBuffer(vk_command_buffer_, index_buffer_handle.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdDrawIndexed(vk_command_buffer_, index_count, 1, 0, 0, 0);
+    SetModelMatrix(glm::mat4(1.0f));
+}
+
+void VulkanRenderer::SetModelMatrix(const glm::mat4& matrix) const {
+    vkCmdPushConstants(vk_command_buffer_, vk_pipeline_layout_, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &matrix);
+}
+
+void VulkanRenderer::SetViewProjection(glm::mat4 matrix, glm::mat4 projection) {
+    UniformTransformations transformations{matrix, projection};
+    std::memcpy(uniform_buffer_location_, &transformations, sizeof(UniformTransformations));
+}
+
+VkCommandBuffer VulkanRenderer::BeginTransientCommandBuffer() {
+    VkCommandBufferAllocateInfo alloc_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        nullptr, vk_command_pool_, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1};
+
+    VkCommandBuffer command_buffer;
+    vkAllocateCommandBuffers(vk_device_, &alloc_info, &command_buffer);
+
+    VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        nullptr, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
+    vkBeginCommandBuffer(command_buffer, &begin_info);
+
+    return command_buffer;
+}
+
+void VulkanRenderer::EndTransientCommandBuffer(VkCommandBuffer command_buffer) {
+    vkEndCommandBuffer(command_buffer);
+
+    VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &command_buffer;
+
+    vkQueueSubmit(vk_graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
+    vkQueueWaitIdle(vk_graphics_queue_);
+    vkFreeCommandBuffers(vk_device_, vk_command_pool_, 1, &command_buffer);
+}
+
+void VulkanRenderer::CreateUniformBuffers() {
+    VkDeviceSize buffer_size = sizeof(UniformTransformations);
+    uniform_buffer_ = CreateBuffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    vkMapMemory(vk_device_, uniform_buffer_.memory, 0, buffer_size, 0, &uniform_buffer_location_);
+}
+
+void VulkanRenderer::CreateDescriptorSetLayouts() {
+    VkDescriptorSetLayoutBinding uniform_layout_binding = {
+        0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL_GRAPHICS};
+
+    VkDescriptorSetLayoutCreateInfo uniform_layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        nullptr, 0, 1, &uniform_layout_binding};
+
+    if (vkCreateDescriptorSetLayout(vk_device_, &uniform_layout_info, nullptr, &vk_descriptor_set_layout_ /*&vk_uniform_set_layout_*/) != VK_SUCCESS) {
+        spdlog::error("Failed to create uniform descriptor set layout!");
+        exit(EXIT_FAILURE);
+    }
+
+    /*VkDescriptorSetLayoutBinding texture_layout_binding = {
+        0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT};
+
+    VkDescriptorSetLayoutCreateInfo texture_layout_info = {
+    VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, 0, 1, &texture_layout_binding};
+
+    if (vkCreateDescriptorSetLayout(vk_device_, &texture_layout_info, nullptr, &vk_texture_set_layout_) != VK_SUCCESS) {
+        spdlog::error("Failed to create texture descriptor set layout!");
+        exit(EXIT_FAILURE);
+    }*/
+}
+
+void VulkanRenderer::CreateDescriptorPools() {
+    VkDescriptorPoolSize uniform_pool_sizes = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1};
+
+    VkDescriptorPoolCreateInfo pool_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        nullptr, 0, 1, 1, &uniform_pool_sizes};
+
+    if (vkCreateDescriptorPool(vk_device_, &pool_info, nullptr, &vk_descriptor_pool_) != VK_SUCCESS) {
+        spdlog::error("Failed to create uniform pool!");
+        exit(EXIT_FAILURE);
+    }
+
+    VkPhysicalDeviceProperties device_properties = {};
+    vkGetPhysicalDeviceProperties(vk_physical_device_, &device_properties);
+
+    VkDescriptorPoolSize texture_pool_size = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1024};
+
+    VkDescriptorPoolCreateInfo texture_pool_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, nullptr,
+        VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1024, 1, &texture_pool_size};
+
+    if (vkCreateDescriptorPool(vk_device_, &texture_pool_info, nullptr, &vk_texture_pool_) != VK_SUCCESS) {
+        spdlog::error("Failed to create texture pool!");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void VulkanRenderer::CreateDescriptorSets() {
+    VkDescriptorSetAllocateInfo alloc_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        nullptr, vk_descriptor_pool_ /*vk_uniform_pool_*/, 1,
+        &vk_descriptor_set_layout_ /*&vk_uniform_set_layout_*/};
+
+    VkResult result = vkAllocateDescriptorSets(vk_device_, &alloc_info, &vk_descriptor_set_ /*&vk_uniform_set_*/);
+    if (result != VK_SUCCESS) {
+        spdlog::error("Failed to allocate descriptor sets!");
+        exit(EXIT_FAILURE);
+    }
+
+    VkDescriptorBufferInfo buffer_info = {uniform_buffer_.buffer, 0, sizeof(UniformTransformations)};
+
+    VkWriteDescriptorSet descriptor_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, vk_descriptor_set_,
+        0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, nullptr, &buffer_info};
+
+    vkUpdateDescriptorSets(vk_device_, 1, &descriptor_write, 0, nullptr);
 }
 
 void VulkanRenderer::RecreateSwapchain() {
@@ -935,6 +1121,14 @@ void VulkanRenderer::OnDestroy() {
 
         CleanupSwapchain();
 
+        if (vk_descriptor_pool_ != VK_NULL_HANDLE) vkDestroyDescriptorPool(vk_device_, vk_descriptor_pool_, nullptr);
+
+        DestroyBuffer(uniform_buffer_);
+
+        if (vk_descriptor_set_layout_ != VK_NULL_HANDLE) vkDestroyDescriptorSetLayout(vk_device_, vk_descriptor_set_layout_, nullptr);
+
+        vkDeviceWaitIdle(vk_device_);
+
         if (vk_image_available_signal_ != VK_NULL_HANDLE) vkDestroySemaphore(
             vk_device_, vk_image_available_signal_, nullptr);
         if (vk_render_finished_signal_ != VK_NULL_HANDLE) vkDestroySemaphore(
@@ -944,7 +1138,6 @@ void VulkanRenderer::OnDestroy() {
         if (vk_command_pool_ != VK_NULL_HANDLE) vkDestroyCommandPool(vk_device_, vk_command_pool_, nullptr);
 
         if (vk_pipeline_ != VK_NULL_HANDLE) vkDestroyPipeline(vk_device_, vk_pipeline_, nullptr);
-
         if (vk_pipeline_layout_ != VK_NULL_HANDLE) vkDestroyPipelineLayout(vk_device_, vk_pipeline_layout_, nullptr);
 
         if (vk_render_pass_ != VK_NULL_HANDLE) vkDestroyRenderPass(vk_device_, vk_render_pass_, nullptr);
@@ -962,9 +1155,21 @@ void VulkanRenderer::OnDestroy() {
     }
 }
 
+
+
 void VulkanRenderer::Render() {
+
+    std::vector<Vertex> vertices = {
+        Vertex{glm::vec3{0.0f, -0.5f, 0.0f}, glm::vec3{1.0f, 0.0f, 0.0f}},
+        Vertex{glm::vec3{0.5f, 0.5f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f}},
+        Vertex{glm::vec3{-0.5f, 0.5f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}}
+    };
+    BufferHandle buffer = CreateVertexBuffer(vertices);
+    std::vector<std::uint32_t> indices = {0, 1, 2};
+    BufferHandle index_buffer = CreateIndexBuffer(indices);
+
     if (BeginFrame()) {
-        RenderTriangle();
+        RenderIndexedBuffer(buffer, index_buffer, indices.size());
         EndFrame();
     }
 }
@@ -978,9 +1183,14 @@ void VulkanRenderer::InitializeVulkan() {
     CreateSwapChain();
     CreateImageViews();
     CreateRenderPass();
+    CreateDescriptorSetLayouts();
     CreateGraphicsPipeline();
     CreateFramebuffers();
     CreateCommandPool();
     CreateCommandBuffer();
     CreateSignals();
+    CreateUniformBuffers();
+    CreateDescriptorPools();
+    CreateDescriptorSets();
+
 }

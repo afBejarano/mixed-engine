@@ -3,8 +3,6 @@
 //
 
 #pragma once
-#include <precomp.h>
-
 
 enum ColliderType{
     sphere, box
