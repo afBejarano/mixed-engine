@@ -3,9 +3,9 @@
 //
 
 #include "Actor.h"
-#include "../src/Debug.h"
-
-Actor::Actor(Component* parent_):Component(parent_) {}
+#include "Debug.h"
+#include "TransformComponent.h"
+#include "glm/gtx/rotate_vector.hpp"
 
 bool Actor::OnCreate() {
     if (isCreated) return true;
@@ -22,7 +22,7 @@ bool Actor::OnCreate() {
 }
 
 Actor::~Actor() {
-    OnDestroy();
+    Actor::OnDestroy();
 }
 
 void Actor::OnDestroy() {
@@ -43,20 +43,20 @@ void Actor::RemoveAllComponents() {
     components.clear();
 }
 
-void Actor::ListComponents() const {
+void Actor::ListComponents() {
     std::cout << typeid(*this).name() << " contains the following components:\n";
-    for (Ref<Component> component : components) {
+    for (auto component : components) {
         std::cout << typeid(*component).name() << std::endl;
     }
     std::cout << '\n';
 }
 
-Matrix4 Actor::GetModelMatrix() {
-    Ref<TransformComponent> transform = GetComponent<TransformComponent>();
+glm::mat4 Actor::GetModelMatrix() {
+    const std::shared_ptr<TransformComponent> transform = GetComponent<TransformComponent>();
     if (transform.get()) {
         modelMatrix = transform->GetTransformMatrix();
     } else {
-        modelMatrix.loadIdentity();
+        modelMatrix = glm::mat4(1.0f);
     }
     if (parent) {
         modelMatrix = dynamic_cast<Actor*>(parent)->GetModelMatrix() * modelMatrix;

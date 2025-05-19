@@ -53,7 +53,7 @@ add_executable(MixedEngine ${MixedEngineSources}
         src/render/Renderer.h
         src/render/VulkanRenderer.cpp
         src/render/VulkanRenderer.h
-        #src/Actor.h
+        src/Actor.h
         src/Camera.cpp
         src/Camera.h
         src/CameraPosition.h
@@ -67,7 +67,7 @@ add_executable(MixedEngine ${MixedEngineSources}
         src/window/Timer.cpp
         src/window/Timer.h
         src/Component.h
-        #src/Actor.cpp
+        src/Actor.cpp
         src/Debug.cpp
         src/Debug.h
         src/vertex.h
@@ -76,6 +76,8 @@ add_executable(MixedEngine ${MixedEngineSources}
         src/TextureHandle.h
         src/stb_image.cpp
         src/stb_image.h
+        src/TransformComponent.cpp
+        src/TransformComponent.h
 )
 
 target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog Microsoft.GSL::GSL)
