@@ -3,14 +3,9 @@
 //
 
 #pragma once
-#include "Component.h"
+#include <Components/Component.h>
 
 class TransformComponent final : public Component {
-private:
-    glm::vec3 pos{};
-    glm::vec3 scale{};
-    glm::quat orientation{};
-
 public:
     explicit TransformComponent(Component* parent_);
     TransformComponent(Component* parent_,glm::vec3 pos_, glm::quat orientation_, glm::vec3 scale_ = glm::vec3(1.0f, 1.0f, 1.0f));
@@ -30,5 +25,9 @@ public:
         scale = scale_;
     }
 
+private:
+    glm::vec3 pos{};
+    glm::vec3 scale{};
+    glm::quat orientation{};
 
 };

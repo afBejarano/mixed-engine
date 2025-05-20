@@ -2,10 +2,10 @@
 // Created by Yibuz Pokopodrozo on 2025-05-12.
 //
 
-#include "Actor.h"
-#include "Debug.h"
-#include "TransformComponent.h"
-#include "glm/gtx/rotate_vector.hpp"
+#include <Components/Actor.h>
+#include <Debug.h>
+#include <Components/TransformComponent.h>
+#include <glm/gtx/rotate_vector.hpp>
 
 bool Actor::OnCreate() {
     if (isCreated) return true;
@@ -30,8 +30,6 @@ void Actor::OnDestroy() {
     RemoveAllComponents();
     isCreated = false;
 }
-
-
 
 void Actor::Update(const float deltaTime) {
     std::cout << "Hello from Update\n";

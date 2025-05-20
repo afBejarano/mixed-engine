@@ -498,13 +498,13 @@ VkShaderModule VulkanRenderer::CreateShaderModule(const std::vector<std::uint8_t
 }
 
 void VulkanRenderer::CreateGraphicsPipeline() {
-    std::vector<std::uint8_t> vertex_data = ReadFile("basic.vert.spv");
+    std::vector<std::uint8_t> vertex_data = ReadFile("shaders/basic.vert.spv");
     VkShaderModule vertex_shader = CreateShaderModule(vertex_data);
     gsl::final_action _destroy_vertex([this, vertex_shader]() {
         vkDestroyShaderModule(vk_device_, vertex_shader, nullptr);
     });
 
-    std::vector<std::uint8_t> fragment_data = ReadFile("basic.frag.spv");
+    std::vector<std::uint8_t> fragment_data = ReadFile("shaders/basic.frag.spv");
     VkShaderModule fragment_shader = CreateShaderModule(fragment_data);
     gsl::final_action _destroy_fragment([this, fragment_shader]() {
         vkDestroyShaderModule(vk_device_, fragment_shader, nullptr);

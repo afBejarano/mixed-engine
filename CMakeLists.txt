@@ -45,40 +45,7 @@ file(GLOB_RECURSE MixedEngineSources CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
 )
 
-add_executable(MixedEngine ${MixedEngineSources}
-        src/precomp.h
-        src/precomp.cpp
-        src/SceneManager.cpp
-        src/SceneManager.h
-        src/render/Renderer.h
-        src/render/VulkanRenderer.cpp
-        src/render/VulkanRenderer.h
-        src/Actor.h
-        src/Camera.cpp
-        src/Camera.h
-        src/CameraPosition.h
-        src/Collider.h
-        src/window/Window.cpp
-        src/window/Window.h
-        src/render/Scene.cpp
-        src/render/Scene.h
-        src/Utilities.cpp
-        src/Utilities.h
-        src/window/Timer.cpp
-        src/window/Timer.h
-        src/Component.h
-        src/Actor.cpp
-        src/Debug.cpp
-        src/Debug.h
-        src/vertex.h
-        src/BufferHandle.h
-        src/UniformTransformations.h
-        src/TextureHandle.h
-        src/stb_image.cpp
-        src/stb_image.h
-        src/TransformComponent.cpp
-        src/TransformComponent.h
-)
+add_executable(MixedEngine ${MixedEngineSources})
 
 target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog Microsoft.GSL::GSL)
 
