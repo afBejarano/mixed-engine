@@ -3,7 +3,6 @@
 //
 
 #pragma once
-#include "glm/fwd.hpp"
 
 struct UniformTransformations {
     glm::mat4 view;

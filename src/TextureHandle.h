@@ -3,7 +3,6 @@
 //
 
 #pragma once
-#include <vulkan/vulkan.h>
 
 struct TextureHandle {
     VkImage image = VK_NULL_HANDLE;

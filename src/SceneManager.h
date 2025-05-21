@@ -10,10 +10,10 @@
 
 class SceneManager {
 public:
-    SceneManager(RendererType render_type_);
+    explicit SceneManager(RendererType render_type_);
     ~SceneManager();
     void Run();
-    bool Initialize(std::string name_, int width_, int height_);
+    bool Initialize(const std::string& name_, int width_, int height_);
     void GetEvents();
 
     enum SCENE_NUMBER {

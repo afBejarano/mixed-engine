@@ -2,9 +2,9 @@
 // Created by Yibuz Pokopodrozo on 2025-05-12.
 //
 
-#include <Components/Actor.h>
+#include <components/Actor.h>
 #include <Debug.h>
-#include <Components/TransformComponent.h>
+#include <components/TransformComponent.h>
 #include <glm/gtx/rotate_vector.hpp>
 
 bool Actor::OnCreate() {

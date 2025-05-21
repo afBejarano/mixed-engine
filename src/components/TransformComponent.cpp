@@ -2,7 +2,7 @@
 // Created by Yibuz Pokopodrozo on 2025-05-19.
 //
 
-#include <Components/TransformComponent.h>
+#include <components/TransformComponent.h>
 
 TransformComponent::TransformComponent(Component* parent_):Component(parent_) {
     pos = glm::vec3(0.0f, 0.0f, 0.0f);

@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#include <Components/Component.h>
+#include <components/Component.h>
 
 class TransformComponent final : public Component {
 public:

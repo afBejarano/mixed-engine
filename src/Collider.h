@@ -4,7 +4,7 @@
 
 #pragma once
 #include <precomp.h>
-#include <Components/Component.h>
+#include <components/Component.h>
 
 enum ColliderType {
     sphere = 1,

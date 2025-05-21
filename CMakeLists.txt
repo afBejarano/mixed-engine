@@ -10,6 +10,8 @@ include(cmake/Shaders.cmake)
 
 include(FetchContent)
 
+include_directories(external)
+
 FetchContent_Declare(
         glm
         GIT_REPOSITORY "https://github.com/g-truc/glm.git"
@@ -38,9 +40,14 @@ file(GLOB_RECURSE MixedEngineSources CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
 )
 
-add_executable(MixedEngine ${MixedEngineSources})
+add_executable(MixedEngine ${MixedEngineSources}
+        src/Object.cpp
+        src/Object.h
+        external/tiny_obj_loader.h)
 
 target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog)
+
+target_compile_definitions(MixedEngine PRIVATE TINYOBJLOADER_IMPLEMENTATION)
 
 target_include_directories(MixedEngine PRIVATE "src")
 

@@ -7,7 +7,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 
 //#include "ModelMatrixPushConstant.h"
-#include <Components/Component.h>
+#include <components/Component.h>
 
 /*struct BufferMemory {
     VkBuffer bufferID;

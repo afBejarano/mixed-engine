@@ -3,7 +3,6 @@
 //
 
 #pragma once
-#include <filesystem>
 
 bool streq(const char* a, const char* b);
 std::vector<std::uint8_t> ReadFile(std::filesystem::path shader_path);

@@ -11,8 +11,7 @@
 SceneManager::SceneManager(RendererType render_type_) : renderType(render_type_) {
 }
 
-SceneManager::~SceneManager() {
-}
+SceneManager::~SceneManager() = default;
 
 void SceneManager::Run() {
     while (!glfwWindowShouldClose(window->getGLFWwindow())) {
@@ -21,7 +20,7 @@ void SceneManager::Run() {
     }
 }
 
-bool SceneManager::Initialize(std::string name_, int width_, int height_) {
+bool SceneManager::Initialize(const std::string& name_, const int width_, const int height_) {
     window = new Window(name_.c_str(), width_, height_, false);
     renderer = new VulkanRenderer(window);
     currentScene = new Scene(renderer);
