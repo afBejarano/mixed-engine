@@ -13,7 +13,6 @@
 #include <fstream>
 #include <string_view>
 #include <glm/glm.hpp>
-#include <gsl/gsl>
 #include <glm/ext.hpp>
 #include <functional>
 #include <iostream>

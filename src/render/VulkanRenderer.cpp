@@ -500,15 +500,9 @@ VkShaderModule VulkanRenderer::CreateShaderModule(const std::vector<std::uint8_t
 void VulkanRenderer::CreateGraphicsPipeline() {
     std::vector<std::uint8_t> vertex_data = ReadFile("shaders/basic.vert.spv");
     VkShaderModule vertex_shader = CreateShaderModule(vertex_data);
-    gsl::final_action _destroy_vertex([this, vertex_shader]() {
-        vkDestroyShaderModule(vk_device_, vertex_shader, nullptr);
-    });
 
     std::vector<std::uint8_t> fragment_data = ReadFile("shaders/basic.frag.spv");
     VkShaderModule fragment_shader = CreateShaderModule(fragment_data);
-    gsl::final_action _destroy_fragment([this, fragment_shader]() {
-        vkDestroyShaderModule(vk_device_, fragment_shader, nullptr);
-    });
 
     if (vertex_shader == VK_NULL_HANDLE || fragment_shader == VK_NULL_HANDLE) {
         spdlog::error("Failed finding shaders!");
@@ -519,6 +513,7 @@ void VulkanRenderer::CreateGraphicsPipeline() {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         nullptr, 0, VK_SHADER_STAGE_VERTEX_BIT, vertex_shader, "main"
     };
+
 
     VkPipelineShaderStageCreateInfo fragment_info = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -626,6 +621,9 @@ void VulkanRenderer::CreateGraphicsPipeline() {
         spdlog::error("failed to create pipeline!");
         std::exit(EXIT_FAILURE);
     }
+
+    vkDestroyShaderModule(vk_device_, vertex_shader, nullptr);
+    vkDestroyShaderModule(vk_device_, fragment_shader, nullptr);
 }
 
 VkViewport VulkanRenderer::GetViewport() const {

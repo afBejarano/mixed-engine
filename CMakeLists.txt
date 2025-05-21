@@ -31,14 +31,7 @@ FetchContent_Declare(
         GIT_SHALLOW TRUE
 )
 
-FetchContent_Declare(
-        microsoft-gsl
-        GIT_REPOSITORY "https://github.com/microsoft/GSL.git"
-        GIT_TAG "v4.2.0"
-        GIT_SHALLOW TRUE
-)
-
-FetchContent_MakeAvailable(glm glfw spdlog microsoft-gsl)
+FetchContent_MakeAvailable(glm glfw spdlog)
 
 file(GLOB_RECURSE MixedEngineSources CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
@@ -47,7 +40,7 @@ file(GLOB_RECURSE MixedEngineSources CONFIGURE_DEPENDS
 
 add_executable(MixedEngine ${MixedEngineSources})
 
-target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog Microsoft.GSL::GSL)
+target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog)
 
 target_include_directories(MixedEngine PRIVATE "src")
 
