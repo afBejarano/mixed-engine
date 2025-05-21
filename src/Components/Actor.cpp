@@ -10,7 +10,7 @@
 bool Actor::OnCreate() {
     if (isCreated) return true;
     Debug::Info("Loading assets for Actor: ", __FILE__, __LINE__);
-    for (auto component : components) {
+    for (const auto& component : components) {
         if (component->OnCreate() == false) {
             Debug::Error("Loading assets for Actor/Components: ", __FILE__, __LINE__);
             isCreated = false;
@@ -43,7 +43,7 @@ void Actor::RemoveAllComponents() {
 
 void Actor::ListComponents() {
     std::cout << typeid(*this).name() << " contains the following components:\n";
-    for (auto component : components) {
+    for (const auto& component : components) {
         std::cout << typeid(*component).name() << std::endl;
     }
     std::cout << '\n';
