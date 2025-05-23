@@ -18,7 +18,7 @@ enum class RendererType {
 
 class Renderer {
 public:
-    Renderer(Window *window): renderer(nullptr), rendererType(RendererType::NONE), window(window) {}
+    Renderer(Window *window, RendererType render_type): renderer(nullptr), rendererType(render_type), window(window) {}
     virtual ~Renderer() = default;
     virtual bool OnCreate() = 0;
     virtual void OnDestroy() = 0;

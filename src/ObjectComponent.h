@@ -72,8 +72,8 @@ struct VertexHash {
 class ObjectComponent : public Component{
 
 public:
-    ObjectComponent(const char *obj, const char *basedir, Component* parent, VulkanRenderer* renderer, TransformComponent transform ) : Component(parent),
-        obj_(obj), basedir_(basedir), vk_renderer_(renderer), transform_component_(transform) {
+    ObjectComponent(const char *obj, const char *basedir, Component* parent, VulkanRenderer* renderer ) : Component(parent),
+        obj_(obj), basedir_(basedir), vk_renderer_(renderer) {
         loadObj();
         buffer_ = vk_renderer_->CreateVertexBuffer(getOVertices());
         index_buffer_ = vk_renderer_->CreateIndexBuffer(getIndices());
@@ -127,7 +127,6 @@ private:
     std::vector<Mesh> meshes_;
     void loadObj();
     VulkanRenderer* vk_renderer_;
-    TransformComponent transform_component_;
     BufferHandle buffer_;
     BufferHandle index_buffer_;
     mutable std::vector<TextureHandle> texture_handles_;

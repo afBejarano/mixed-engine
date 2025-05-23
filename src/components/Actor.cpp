@@ -35,7 +35,11 @@ void Actor::Update(const float deltaTime) {
     std::cout << "Hello from Update\n";
 }
 
-void Actor::Render()const {}
+void Actor::Render()const {
+    for (Component* component : components) {
+        component->Render();
+    }
+}
 
 void Actor::RemoveAllComponents() {
     components.clear();
@@ -50,8 +54,8 @@ void Actor::ListComponents() {
 }
 
 glm::mat4 Actor::GetModelMatrix() {
-    const std::shared_ptr<TransformComponent> transform = GetComponent<TransformComponent>();
-    if (transform.get()) {
+    TransformComponent* transform = GetComponent<TransformComponent>();
+    if (transform) {
         modelMatrix = transform->GetTransformMatrix();
     } else {
         modelMatrix = glm::mat4(1.0f);

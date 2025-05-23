@@ -18,7 +18,9 @@ public:
     bool OnCreate();
     void OnDestroy();
     void HandleEvents();
+    void Render();
 
 private:
     Renderer* renderer;
+    std::vector<Component*> components_;
 };

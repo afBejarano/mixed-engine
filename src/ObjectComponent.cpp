@@ -7,6 +7,8 @@
 #include <iostream>
 #include <tiny_obj_loader.h>
 
+#include "components/Actor.h"
+
 bool ObjectComponent::OnCreate() {
     return true;
 }
@@ -19,7 +21,7 @@ void ObjectComponent::Update(float deltaTime) {
 
 void ObjectComponent::Render() const {
     vk_renderer_->RenderModel(buffer_, index_buffer_, getMeshes(), texture_handles_, getMaterialUBOs(),
-                              transform_component_.GetTransformMatrix());
+                              static_cast<Actor*>(parent)->GetComponent<TransformComponent>()->GetTransformMatrix());
 }
 
 void ObjectComponent::loadObj() {

@@ -18,6 +18,6 @@ layout (push_constant) uniform Model {
 
 void main() {
     gl_Position = camera.projection * camera.view * model.transformation * vec4(input_position, 1.0);
-    vertex_uv = input_uv;
+    vertex_uv = vec2(input_uv.x, input_uv.y);
     oNormal = normal;
 }

@@ -73,6 +73,10 @@ public:
     TextureHandle CreateTexture(const char* path);
     void SetViewProjection(glm::mat4 matrix, glm::mat4 projection);
 
+    glm::ivec2 GetWindowSize() {
+        return window->GetFrameBufferSize();
+    }
+
 private:
     void PickPhysicalDevice();
     void CreateLogicalDeviceAndQueues();

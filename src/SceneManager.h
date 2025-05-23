@@ -39,5 +39,5 @@ private:
     bool isRunning;
     void BuildScene(SCENE_NUMBER scene_);
 
-    std::vector<ObjectComponent> components_;
+
 };

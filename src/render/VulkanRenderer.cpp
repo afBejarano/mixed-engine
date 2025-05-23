@@ -1334,7 +1334,7 @@ void VulkanRenderer::TransitionImageLayout(VkImage image, VkImageLayout oldLayou
         src_stage_flags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         dst_stage_flags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout ==
-               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
         src_stage_flags = VK_PIPELINE_STAGE_TRANSFER_BIT;
@@ -1437,7 +1437,7 @@ void VulkanRenderer::CleanupSwapchain() const {
     if (vk_swapchain_ != VK_NULL_HANDLE) vkDestroySwapchainKHR(vk_device_, vk_swapchain_, nullptr);
 }
 
-VulkanRenderer::VulkanRenderer(Window *window): Renderer(window) {
+VulkanRenderer::VulkanRenderer(Window* window): Renderer(window, RendererType::VULKAN) {
 #if !defined(NDEBUG)
     validation_ = true;
 #endif

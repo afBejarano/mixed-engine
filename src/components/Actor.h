@@ -25,7 +25,7 @@ struct IndexedBufferMemory {
 };*/
 
 class Actor : public Component {
-    std::vector<std::shared_ptr<Component> > components;
+    std::vector<Component*> components;
 
 protected:
     glm::mat4 modelMatrix;
@@ -60,11 +60,10 @@ public:
     }
 
     template<typename ComponentTemplate>
-    std::shared_ptr<ComponentTemplate> GetComponent() {
-        for (std::shared_ptr component: components) {
-            if (std::shared_ptr<ComponentTemplate> casted_component = std::dynamic_pointer_cast<
-                ComponentTemplate>(component)) {
-                return casted_component;
+    ComponentTemplate* GetComponent() {
+        for (Component* component: components) {
+            if (dynamic_cast<ComponentTemplate*>(component) != nullptr) {
+                return dynamic_cast<ComponentTemplate*>(component);
             }
         }
         return nullptr;
