@@ -9,8 +9,13 @@
 #include "Vertex.h"
 #include "BufferHandle.h"
 #include "TextureHandle.h"
+
 #include "UniformTransformations.h"
 
+struct Mesh;
+struct oVertex;
+struct Material_UBO;
+class ObjectComponent;
 const std::vector validationLayers = {
         "VK_LAYER_KHRONOS_validation"
     };
@@ -58,6 +63,18 @@ public:
     void OnDestroy() override;
     void Render() override;
 
+    void RenderModel(BufferHandle vertex_buffer, BufferHandle index_buffer, std::vector<Mesh> meshes,
+                           std::vector<TextureHandle> &textures, std::vector<Material_UBO> material_ubos,
+                           const glm::mat4 &modelMatrix);
+
+    bool BeginFrame();
+    void EndFrame();
+
+    BufferHandle CreateIndexBuffer(std::vector<uint32_t> indices);
+    BufferHandle CreateVertexBuffer(std::vector<oVertex> vertices);
+    TextureHandle CreateTexture(const char* path);
+    void SetViewProjection(glm::mat4 matrix, glm::mat4 projection);
+
 private:
     void PickPhysicalDevice();
     void CreateLogicalDeviceAndQueues();
@@ -79,18 +96,15 @@ private:
     void BeginCommands() const;
     void EndCommands() const;
     void CreateSignals();
-    bool BeginFrame();
-    void EndFrame();
     std::uint32_t FindMemoryType(std::uint32_t memory_type_bits, VkMemoryPropertyFlags properties) const;
     BufferHandle CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
-    BufferHandle CreateIndexBuffer(std::vector<uint32_t> indices);
-    BufferHandle CreateVertexBuffer(std::vector<Vertex> vertices);
     void DestroyBuffer(BufferHandle buffer_handle) const;
     void RenderBuffer(BufferHandle buffer_handle, std::uint32_t vertex_count);
-    void RenderIndexedBuffer(BufferHandle verte_buffer_handle, BufferHandle index_buffer_handle,
-                             std::uint32_t index_count);
+    void RenderIndexedBuffer(BufferHandle vertex_buffer_handle, BufferHandle index_buffer_handle,
+                             std::uint32_t index_count, std::int32_t index_offset);
+
     void SetModelMatrix(const glm::mat4& matrix) const;
-    void SetViewProjection(glm::mat4 matrix, glm::mat4 projection);
+    void SetUbo(Material_UBO& material_ubos) const;
     VkCommandBuffer BeginTransientCommandBuffer();
     void EndTransientCommandBuffer(VkCommandBuffer command_buffer);
     void CreateUniformBuffers();
@@ -98,7 +112,6 @@ private:
     void CreateDescriptorPools();
     void CreateDescriptorSets();
     void CreateTextureSampler();
-    TextureHandle CreateTexture(const char* path);
     void DestroyTexture(TextureHandle &handle);
     void SetTexture(TextureHandle &handle);
     void TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
@@ -165,6 +178,11 @@ private:
     VkDescriptorSetLayout vk_texture_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorPool vk_texture_pool_ = VK_NULL_HANDLE;
     VkSampler vk_texture_sampler_ = VK_NULL_HANDLE;
+
+    VkDescriptorSetLayout vk_uniform_bp_set_layout_ = VK_NULL_HANDLE;
+    VkDescriptorSet vk_bp_set_ = VK_NULL_HANDLE;
+    BufferHandle bp_buffer_handle_;
+    void *bp_buffer_location_;
 
     std::vector<Vertex> vertices = {
         Vertex{glm::vec3{0.0f, -0.5f, 0.0f}, glm::vec3{1.0f, 0.0f, 0.0f}},

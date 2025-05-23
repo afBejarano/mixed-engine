@@ -41,8 +41,8 @@ file(GLOB_RECURSE MixedEngineSources CONFIGURE_DEPENDS
 )
 
 add_executable(MixedEngine ${MixedEngineSources}
-        src/Object.cpp
-        src/Object.h
+        src/ObjectComponent.cpp
+        src/ObjectComponent.h
         external/tiny_obj_loader.h)
 
 target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog)
@@ -63,4 +63,4 @@ file(GLOB_RECURSE ShaderSources CONFIGURE_DEPENDS
 add_shaders(MixedEngineShaders ${ShaderSources})
 add_dependencies(MixedEngine MixedEngineShaders)
 
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures/paving-stones.jpg" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/assets/textures/")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
