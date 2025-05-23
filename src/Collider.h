@@ -24,7 +24,7 @@ public:
     }
 
     Collider(const glm::vec3 nMaxCorner, const glm::vec3 nMinCorner, Component *parent_) : Component(parent_),
-        maxCorner(nMaxCorner), minCorner(nMinCorner), colliderRadius({}), sPosition({}) {
+        maxCorner(nMaxCorner), minCorner(nMinCorner), colliderRadius(), sPosition() {
         type = box;
     }
 

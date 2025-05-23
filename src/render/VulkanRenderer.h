@@ -10,8 +10,6 @@
 #include "BufferHandle.h"
 #include "TextureHandle.h"
 
-#include "UniformTransformations.h"
-
 struct Mesh;
 struct oVertex;
 struct Material_UBO;
@@ -63,7 +61,7 @@ public:
     void OnDestroy() override;
     void Render() override;
 
-    void RenderModel(BufferHandle vertex_buffer, BufferHandle index_buffer, std::vector<Mesh> meshes,
+    void RenderModel(BufferHandle vertex_buffer, BufferHandle index_buffer, const std::vector<Mesh> &meshes,
                            std::vector<TextureHandle> &textures, std::vector<Material_UBO> material_ubos,
                            const glm::mat4 &modelMatrix);
 
@@ -83,12 +81,12 @@ private:
     [[nodiscard]] VkExtent2D ChooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
     static std::uint32_t ChooseImageCount(const VkSurfaceCapabilitiesKHR& capabilities);
     void CreateSwapChain();
-    VkImageView CreateImageView(VkImage image, VkFormat format) const;
+    VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags) const;
     void CreateImageViews();
-    VkShaderModule CreateShaderModule(const std::vector<std::uint8_t>& buffer) const;
+    [[nodiscard]] VkShaderModule CreateShaderModule(const std::vector<std::uint8_t>& buffer) const;
     void CreateGraphicsPipeline();
-    VkViewport GetViewport() const;
-    VkRect2D GetScissor() const;
+    [[nodiscard]] VkViewport GetViewport() const;
+    [[nodiscard]] VkRect2D GetScissor() const;
     void CreateRenderPass();
     void CreateFramebuffers();
     void CreateCommandPool();
@@ -96,7 +94,7 @@ private:
     void BeginCommands() const;
     void EndCommands() const;
     void CreateSignals();
-    std::uint32_t FindMemoryType(std::uint32_t memory_type_bits, VkMemoryPropertyFlags properties) const;
+    [[nodiscard]] std::uint32_t FindMemoryType(std::uint32_t memory_type_bits, VkMemoryPropertyFlags properties) const;
     BufferHandle CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
     void DestroyBuffer(BufferHandle buffer_handle) const;
     void RenderBuffer(BufferHandle buffer_handle, std::uint32_t vertex_count);
@@ -112,11 +110,12 @@ private:
     void CreateDescriptorPools();
     void CreateDescriptorSets();
     void CreateTextureSampler();
+    void CreateDepthResources();
     void DestroyTexture(TextureHandle &handle);
     void SetTexture(TextureHandle &handle);
     void TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
     void CopyBufferToImage(VkBuffer buffer, VkImage image, glm::vec2 image_size);
-    TextureHandle CreateImage(glm::vec2 image_size, VkBufferUsageFlags usage_flags, VkMemoryPropertyFlags property_flags);
+    TextureHandle CreateImage(glm::vec2 image_size, VkFormat image_format, VkBufferUsageFlags usage_flags, VkMemoryPropertyFlags property_flags);
     void RecreateSwapchain();
     void CleanupSwapchain() const;
     [[nodiscard]] std::vector<VkPhysicalDevice> GetPhysicalDevices() const;
@@ -178,6 +177,7 @@ private:
     VkDescriptorSetLayout vk_texture_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorPool vk_texture_pool_ = VK_NULL_HANDLE;
     VkSampler vk_texture_sampler_ = VK_NULL_HANDLE;
+    TextureHandle depth_texture_;
 
     VkDescriptorSetLayout vk_uniform_bp_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorSet vk_bp_set_ = VK_NULL_HANDLE;

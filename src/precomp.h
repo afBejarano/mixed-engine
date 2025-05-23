@@ -21,7 +21,7 @@
 #include <optional>
 #include <utility>
 #include <algorithm>
-#include <stb_image.h>
+#include <external/stb_image.h>
 #include <vector>
 #include <filesystem>
 #include <ObjectComponent.h>
