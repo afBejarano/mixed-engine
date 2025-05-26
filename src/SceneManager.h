@@ -38,6 +38,5 @@ private:
     unsigned int fps;
     bool isRunning;
     void BuildScene(SCENE_NUMBER scene_);
-
-
+    Scene* LoadScene(const std::string &name_);
 };

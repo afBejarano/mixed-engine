@@ -6,6 +6,7 @@
 #include <string>
 
 #include "Renderer.h"
+#include "components/Actor.h"
 
 class Scene {
 public:
@@ -19,6 +20,8 @@ public:
     void OnDestroy();
     void HandleEvents();
     void Render();
+
+    void AddActor(Actor* actor);
 
 private:
     Renderer* renderer;
