@@ -47,6 +47,15 @@ struct SwapchainSupportCapabilities {
     }
 };
 
+struct GraphicsPipelineConfig {
+    std::filesystem::path vert_path;
+    std::filesystem::path frag_path;
+
+    int cull_mode;
+
+    std::vector<VkDescriptorSetLayout> set_layouts;
+};
+
 class VulkanRenderer : public Renderer {
 public:
     explicit VulkanRenderer(Window* window);
@@ -88,7 +97,7 @@ private:
     VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags) const;
     void CreateImageViews();
     [[nodiscard]] VkShaderModule CreateShaderModule(const std::vector<std::uint8_t>& buffer) const;
-    void CreateGraphicsPipeline();
+    void CreateGraphicsPipeline(VkPipeline& pipeline, VkPipelineLayout& pipeline_layout, const GraphicsPipelineConfig& gp_config);
     [[nodiscard]] VkViewport GetViewport() const;
     [[nodiscard]] VkRect2D GetScissor() const;
     void CreateRenderPass();
@@ -160,8 +169,10 @@ private:
     std::vector<VkFramebuffer> vk_swapchain_framebuffers_;
 
     VkPipelineLayout vk_pipeline_layout_ = VK_NULL_HANDLE;
+    VkPipelineLayout vk_skybox_pipeline_layout_ = VK_NULL_HANDLE;
     VkRenderPass vk_render_pass_ = VK_NULL_HANDLE;
     VkPipeline vk_pipeline_ = VK_NULL_HANDLE;
+    VkPipeline vk_skybox_pipeline_ = VK_NULL_HANDLE;
 
     VkCommandPool vk_command_pool_ = VK_NULL_HANDLE;
     VkCommandBuffer vk_command_buffer_ = VK_NULL_HANDLE;
@@ -187,6 +198,9 @@ private:
     VkDescriptorSet vk_bp_set_ = VK_NULL_HANDLE;
     BufferHandle bp_buffer_handle_;
     void *bp_buffer_location_;
+
+    VkDescriptorSetLayout vk_skybox_uniform_set_layout_ = VK_NULL_HANDLE;
+    VkDescriptorSetLayout vk_skybox_texture_set_layout_ = VK_NULL_HANDLE;
 
     std::vector<Vertex> vertices = {
         Vertex{glm::vec3{0.0f, -0.5f, 0.0f}, glm::vec3{1.0f, 0.0f, 0.0f}},

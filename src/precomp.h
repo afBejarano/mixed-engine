@@ -12,6 +12,7 @@
 #include <string>
 #include <fstream>
 #include <string_view>
+#include <memory>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <functional>
