@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Scene e-x="0.0" e-y="-1.0" e-z="-10.0" c-x="0.0" c-y="-1.0" c-z="0.0" u-x="0.0" u-y="1.0" u-z="0.0" fov="60.0" zNear="0.1" zFar="100">
+<Scene e-x="0.0" e-y="-1.0" e-z="-10.0" c-x="0.0" c-y="-1.0" c-z="0.0" u-x="0.0" u-y="-1.0" u-z="0.0" fov="60.0" zNear="0.1" zFar="100">
     <Actor>
         <ObjectComponent obj="./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
                          basedir="./assets/Spaceship/"/>
         <TransformComponent>
             <Position x="-5.0" y="0.0" z="0.0"/>
-            <Orientation x="180.0" y="0.0" z="0.0"/>
-            <Scale x="1.0" y="1.0" z="1.0"/>
-        </TransformComponent>
-    </Actor>
-    <Actor>
-        <ObjectComponent obj="./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
-                         basedir="./assets/Spaceship/"/>
-        <TransformComponent>
-            <Position x="5.0" y="0.0" z="0.0"/>
-            <Orientation x="180.0" y="0.0" z="0.0"/>
+            <Orientation x="0.0" y="0.0" z="0.0"/>
             <Scale x="1.0" y="1.0" z="1.0"/>
         </TransformComponent>
     </Actor>
     <!--Actor>
+        <ObjectComponent obj="./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+                         basedir="./assets/Spaceship/"/>
+        <TransformComponent>
+            <Position x="5.0" y="0.0" z="0.0"/>
+            <Orientation x="0.0" y="0.0" z="0.0"/>
+            <Scale x="1.0" y="1.0" z="1.0"/>
+        </TransformComponent>
+    </Actor-->
+    <Actor>
         <ObjectComponent obj="./assets/Skull/12140_Skull_v3_L2.obj"
                          basedir="./assets/Skull/"/>
         <TransformComponent>
-            <Position x="50.0" y="0.0" z="0.0"/>
-            <Orientation x="90.0" y="0.0" z="0.0"/>
+            <Position x="5.0" y="0.0" z="0.0"/>
+            <Orientation x="90.0" y="0.0" z="180.0"/>
             <Scale x="0.1" y="0.1" z="0.1"/>
         </TransformComponent>
-    </Actor-->
+    </Actor>
 
 </Scene>

@@ -31,9 +31,23 @@ void TransformComponent::Update(const float deltaTime) {
 void TransformComponent::Render()const {}
 
 glm::mat4 TransformComponent::GetTransformMatrix() const {
-    auto transform = glm::mat4(1.0f);
+    /*auto transform = glm::mat4(1.0f);
     transform = glm::scale(transform, scale);
-    transform = transform * glm::mat4_cast(orientation);
+    auto quatMatrix = glm::mat4_cast(orientation);
+    transform = transform * quatMatrix;
     transform = glm::translate(transform, pos);
-    return transform;
+    return transform;*/
+
+    // 1. Create a matrix that handles only local scale and rotation
+    //    (Order: Scale then Rotate on the vertex)
+    glm::mat4 local_transform = glm::mat4(1.0f);
+    local_transform = glm::scale(local_transform, scale);
+    local_transform = local_transform * glm::mat4_cast(orientation);
+
+    // 2. Create a separate translation matrix for the world position
+    glm::mat4 translation_matrix = glm::translate(glm::mat4(1.0f), pos);
+
+    // 3. Combine them: Translate the local transformation into world space.
+    //    (Equivalent to: World_Translation_Matrix * Local_Rotation_Scale_Matrix * Vertex)
+    return translation_matrix * local_transform;
 }

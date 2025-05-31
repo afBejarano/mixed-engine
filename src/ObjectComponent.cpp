@@ -21,7 +21,7 @@ void ObjectComponent::Update(float deltaTime) {
 
 void ObjectComponent::Render() const {
     vk_renderer_->RenderModel(buffer_, index_buffer_, getMeshes(), texture_handles_, getMaterialUBOs(),
-                              static_cast<Actor*>(parent)->GetComponent<TransformComponent>()->GetTransformMatrix());
+                              dynamic_cast<Actor*>(parent)->GetComponent<TransformComponent>()->GetTransformMatrix());
 }
 
 void ObjectComponent::loadObj() {
