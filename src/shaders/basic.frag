@@ -33,27 +33,30 @@ layout(set = 3, binding = 0) uniform GlobalLightingUBO {
 vec4 CalcPointLight(LightUBO light)
 {
     vec3 norm = normalize(normal);
-    vec3 viewDir = normalize(viewPos - FragPos);
-
-    vec3 lightDir = vec3(normalize(light.position - vec4(FragPos,1)));
+    vec3 lightDir = normalize(vec3(light.position) - FragPos);
+    
+    // Simple diffuse lighting
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 reflectDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(norm, reflectDir), 0.0), 5.0);
-    float distance = length(vec3(light.position) - FragPos);
-    float attenuation = 1.0 / distance;
-    vec3 ambient  = ubo.ambient  * vec3(texture(texture_sampler, vertex_uv));
-    vec3 diffuse  = vec3(light.diffuse) * diff * vec3(texture(texture_sampler, vertex_uv));
-    vec3 specular = ubo.specular * spec * attenuation;
-    ambient  *= attenuation;
-    diffuse  *= attenuation;
-    specular *= attenuation;
-    return vec4(ambient + diffuse + specular, 1.0);
+    
+    // Get base color from texture
+    vec3 texColor = vec3(texture(texture_sampler, vertex_uv));
+    
+    // Combine light color with texture and diffuse factor
+    vec3 result = vec3(light.diffuse) * texColor * diff;
+    
+    return vec4(result, 1.0);
 }
 
 void main() {
-    vec4 sum = vec4(0.0,0.0,0.0,0.0);
-    for(int i = 0; i < glights.numLights; i++){
-        sum += CalcPointLight(glights.lights[i])/glights.numLights;
+    // Start with base ambient lighting
+    vec3 texColor = vec3(texture(texture_sampler, vertex_uv));
+    vec4 result = vec4(texColor * 0.2, 1.0);  // 0.2 is ambient intensity
+    
+    // Add contribution from each light
+    for(int i = 0; i < glights.numLights; i++) {
+        result += CalcPointLight(glights.lights[i]);
     }
-    out_color = sum;
+    
+    // Ensure we don't exceed maximum brightness
+    out_color = clamp(result, 0.0, 1.0);
 }

@@ -20,11 +20,14 @@ layout (push_constant) uniform Model {
 
 void main() {
     vertex_uv = input_uv;
-    oNormal = normal.xyz;
+    // Transform normal by the inverse transpose of the model matrix to handle non-uniform scaling
+    mat3 normalMatrix = transpose(inverse(mat3(model.transformation)));
+    oNormal = normalize(normalMatrix * normal);
+    
     vec4 vVertex1 = vec4(input_position.x, input_position.y, input_position.z, 1);
     FragPos = vec3(model.transformation * vVertex1);
 
     viewPos = camera.viewPos;
 
-    gl_Position =  camera.projection * camera.view * model.transformation * vVertex1;
+    gl_Position = camera.projection * camera.view * model.transformation * vVertex1;
 }

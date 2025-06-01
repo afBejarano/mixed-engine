@@ -91,12 +91,16 @@ void ObjectComponent::loadObj() {
     }
 
     for (const auto& shape : materials) {
+        Material_UBO material_ubo;
+        material_ubo.ambient = glm::vec3{shape.ambient[0], shape.ambient[1], shape.ambient[2]};
+        material_ubo.diffuse = glm::vec3{shape.diffuse[0], shape.diffuse[1], shape.diffuse[2]};
+        material_ubo.specular = glm::vec3{shape.specular[0], shape.specular[1], shape.specular[2]};
+        // Ensure shininess is not too low
+        material_ubo.shininess = std::max(shape.shininess, 32.0f);  // Default to 32 if too low
+        
         materials_.push_back(material{
-                glm::vec3{shape.ambient[0], shape.ambient[1], shape.ambient[2]},
-                glm::vec3{shape.diffuse[0], shape.diffuse[1], shape.diffuse[2]},
-                glm::vec3{shape.specular[0], shape.specular[1], shape.specular[2]},
-                shape.shininess,
-                basedir_ + shape.diffuse_texname.substr(2)
-            });
+            material_ubo,
+            basedir_ + shape.diffuse_texname.substr(2)
+        });
     }
 }
