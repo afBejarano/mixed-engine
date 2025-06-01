@@ -2,8 +2,8 @@
 // Created by Yibuz Pokopodrozo on 2025-05-30.
 //
 
-#include "Trackball.h"
-#include "Camera.h"
+#include <Trackball.h>
+#include <Camera.h>
 
 Trackball::Trackball(GLFWwindow* window, Camera* camera, VulkanRenderer* renderer)
     : window(window), camera(camera), renderer(renderer), mouseDown(false) {
@@ -46,7 +46,7 @@ void Trackball::Reset() {
     mouseRotationMatrix = glm::mat4(1.0f);
     if (camera) {
         camera->LookAt(initialEye, initialAt, initialUp);
-        if (renderer) renderer->SetViewProjection(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        if (renderer) renderer->SetViewProjection(camera->GetViewMatrix(), camera->GetProjectionMatrix(), initialEye);
     }
 
     cameraForward = -glm::normalize(initialEye - initialAt);
@@ -130,7 +130,7 @@ void Trackball::OnMouseMove(const uint32_t x, const uint32_t y) {
 
             camera->LookAt(newEye, initialAt, cameraUp);
 
-            if (renderer) renderer->SetViewProjection(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+            if (renderer) renderer->SetViewProjection(camera->GetViewMatrix(), camera->GetProjectionMatrix(), newEye);
         }
     }
 

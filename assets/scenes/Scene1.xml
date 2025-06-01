@@ -17,6 +17,15 @@
             <Orientation x="0.0" y="0.0" z="0.0"/>
             <Scale x="1.0" y="1.0" z="1.0"/>
         </TransformComponent>
+    </Actor>
+    <Actor>
+        <ObjectComponent obj="./assets/Spider/spider.obj"
+                         basedir="./assets/Spider/"/>
+        <TransformComponent>
+            <Position x="5.0" y="0.0" z="0.0"/>
+            <Orientation x="0.0" y="90.0" z="0.0"/>
+            <Scale x="0.05" y="0.05" z="0.05"/>
+        </TransformComponent>
     </Actor-->
     <Actor>
         <ObjectComponent obj="./assets/Skull/12140_Skull_v3_L2.obj"

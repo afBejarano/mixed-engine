@@ -3,10 +3,9 @@
 //
 
 #pragma once
-#include <string>
 
-#include "Renderer.h"
-#include "components/Actor.h"
+#include <components/Actor.h>
+#include <render/Renderer.h>
 
 class Scene {
 public:
@@ -25,5 +24,6 @@ public:
 
 private:
     Renderer* renderer;
+    GlobalLighting* global_lighting_;
     std::vector<Component*> components_;
 };

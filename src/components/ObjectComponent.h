@@ -3,10 +3,8 @@
 //
 
 #pragma once
-#include "components/Component.h"
-#include "components/TransformComponent.h"
-#include "precomp.h"
-#include "render/VulkanRenderer.h"
+#include <components/Component.h>
+#include <render/VulkanRenderer.h>
 
 struct Mesh {
     std::vector<int> indices;

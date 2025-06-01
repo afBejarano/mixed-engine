@@ -3,10 +3,8 @@
 //
 
 #pragma once
-#include <string>
 
-#include "GLFW/glfw3.h"
-#include "window/Window.h"
+#include <window/Window.h>
 
 enum class RendererType {
     NONE,

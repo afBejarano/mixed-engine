@@ -1,4 +1,4 @@
-#include "SceneManager.h"
+#include <SceneManager.h>
 
 int main() {
     std::string name{"Graphics Game Engine"};

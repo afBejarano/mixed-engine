@@ -24,5 +24,5 @@
 #include <stb_image.h>
 #include <vector>
 #include <filesystem>
-#include <ObjectComponent.h>
+#include <components/ObjectComponent.h>
 #include <render/VulkanRenderer.h>

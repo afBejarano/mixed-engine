@@ -2,14 +2,12 @@
 // Created by andre on 2025-05-10.
 //
 
-#include "Window.h"
-#include <iostream>
+#include <window/Window.h>
 #include <ostream>
 
 Window::Window(const char *title, const int width, const int height, bool fullscreen) : width(width), height(height) {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    //glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
     if (fullscreen) {
         GLFWmonitor *monitor = glfwGetPrimaryMonitor();

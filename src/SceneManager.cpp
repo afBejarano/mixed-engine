@@ -2,11 +2,16 @@
 // Created by andre on 13/04/2025.
 //
 
-#include "SceneManager.h"
+#include <SceneManager.h>
 
-#include "render/Scene.h"
+#include <render/Scene.h>
 #include <rapidxml-1.13/rapidxml.hpp>
 #include <rapidxml-1.13/rapidxml_utils.hpp>
+
+#include <Camera.h>
+#include <Trackball.h>
+
+#include <components/TransformComponent.h>
 
 SceneManager::SceneManager(RendererType render_type_) : renderType(render_type_), camera(nullptr), trackball(nullptr) {}
 
@@ -88,7 +93,7 @@ Scene *SceneManager::LoadScene(const std::string &name_) {
         trackball->SetInitialView(eye, center, up);
 
         // Set view and projection in renderer
-        vRenderer->SetViewProjection(camera->GetViewMatrix(), camera->GetProjectionMatrix());
+        vRenderer->SetViewProjection(camera->GetViewMatrix(), camera->GetProjectionMatrix(), eye);
 
         for (rapidxml::xml_node<> *node = baseNode->first_node(); node; node = node->next_sibling()) {
             auto *actor = new Actor(nullptr);

@@ -2,7 +2,7 @@
 // Created by Yibuz Pokopodrozo on 2025-05-12.
 //
 
-#include "Timer.h"
+#include <window/Timer.h>
 
 Timer::Timer() {
     prevTicks = 0;

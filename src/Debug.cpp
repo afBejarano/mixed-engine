@@ -2,7 +2,7 @@
 // Created by Yibuz Pokopodrozo on 2025-05-12.
 //
 
-#include "Debug.h"
+#include <Debug.h>
 std::string Debug::fileName = "";
 
 void Debug::DebugInit(const std::string& fileName_) {

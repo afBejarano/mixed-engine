@@ -2,7 +2,7 @@
 // Created by Yibuz Pokopodrozo on 2025-05-10.
 //
 
-#include "Camera.h"
+#include <Camera.h>
 
 Camera::Camera() {
 	projection = glm::mat4();

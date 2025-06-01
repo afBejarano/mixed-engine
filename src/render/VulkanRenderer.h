@@ -4,11 +4,12 @@
 
 #pragma once
 
-#include "Renderer.h"
-#include "window/Window.h"
-#include "Vertex.h"
-#include "BufferHandle.h"
-#include "TextureHandle.h"
+#include <BufferHandle.h>
+#include <GlobalLight.h>
+#include <TextureHandle.h>
+#include <Vertex.h>
+#include <render/Renderer.h>
+#include <window/Window.h>
 
 struct Mesh;
 struct oVertex;
@@ -94,10 +95,11 @@ public:
     BufferHandle CreateVertexBuffer(std::vector<oVertex> vertices);
     BufferHandle CreateVertexBuffer(const std::vector<glm::vec3>& vertices);
     TextureHandle CreateTexture(const char* path);
-    void SetViewProjection(glm::mat4 matrix, glm::mat4 projection);
+    void SetViewProjection(glm::mat4 matrix, glm::mat4 projection, glm::vec3 cameraPos);
 
     void DestroyTexture(TextureHandle &handle);
     void DestroyBuffer(BufferHandle buffer_handle) const;
+    void SetLightsUBO(GlobalLighting *global_lighting);
 
     glm::ivec2 GetWindowSize() {
         return window->GetFrameBufferSize();
@@ -164,6 +166,7 @@ private:
     static std::vector<VkLayerProperties> GetSupportedValidationLayers();
     static std::vector<VkExtensionProperties> GetSupportedInstanceExtensions();
     static std::vector<const char*> GetSuggestedInstanceExtensions();
+    void SetGlobalLights(GlobalLighting* global);
 
     bool validation_ = false;
 
@@ -218,6 +221,11 @@ private:
         Vertex{glm::vec3{0.5f, 0.5f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f}},
         Vertex{glm::vec3{-0.5f, 0.5f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}}
     };
+
+    VkDescriptorSetLayout vk_lights_set_layout_ = VK_NULL_HANDLE;
+    VkDescriptorSet vk_lights_set_ = VK_NULL_HANDLE;
+    BufferHandle g_light_handle_;
+    void *global_lights_buffer_location_ = nullptr;
 
     Skybox skybox_{};
 

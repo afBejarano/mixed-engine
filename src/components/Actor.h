@@ -6,23 +6,7 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 
-//#include "ModelMatrixPushConstant.h"
 #include <components/Component.h>
-
-/*struct BufferMemory {
-    VkBuffer bufferID;
-    VkDeviceMemory bufferMemoryID;
-};
-
-struct IndexedBufferMemory {
-    VkBuffer vertBufferID;
-    VkDeviceMemory vertBufferMemoryID;
-    VkDeviceSize vertBufferSize;
-
-    VkBuffer indexBufferID;
-    VkDeviceMemory indexBufferMemoryID;
-    VkDeviceSize indexBufferSize;
-};*/
 
 class Actor : public Component {
     std::vector<Component*> components;
@@ -39,13 +23,6 @@ public:
     Actor(Component *parent_): Component(parent_) {}
 
     Actor(): Component(nullptr) {}
-
-    /*VkImage textureImage;
-    VkImageView textureImageView;
-    VkSampler imageSampler;
-    IndexedBufferMemory modelBufferedMemory;
-    VkDescriptorPool descriptorPool;
-    std::vector<VkDescriptorSet> descriptorSets;*/
 
     bool OnCreate() override;
     ~Actor() override;

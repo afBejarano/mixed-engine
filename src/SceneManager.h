@@ -3,11 +3,11 @@
 //
 #pragma once
 
-#include "render/Renderer.h"
-#include "window/Window.h"
-#include "render/Scene.h"
-#include "Camera.h"
-#include "Trackball.h"
+#include <Camera.h>
+#include <Trackball.h>
+#include <render/Renderer.h>
+#include <render/Scene.h>
+#include <window/Window.h>
 
 
 class SceneManager {

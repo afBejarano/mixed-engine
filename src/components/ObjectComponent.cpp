@@ -2,19 +2,17 @@
 // Created by andre on 2025-05-21.
 //
 
-#include "ObjectComponent.h"
+#include <components/ObjectComponent.h>
 
-#include <iostream>
 #include <tiny_obj_loader.h>
-
-#include "components/Actor.h"
+#include <components/Actor.h>
+#include <components/TransformComponent.h>
 
 bool ObjectComponent::OnCreate() {
     return true;
 }
 
 void ObjectComponent::OnDestroy() {
-    // Destroy vertex and index buffers if they exist
     if (buffer_.buffer != VK_NULL_HANDLE) {
         vk_renderer_->DestroyBuffer(buffer_);
     }
