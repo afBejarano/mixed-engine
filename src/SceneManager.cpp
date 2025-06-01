@@ -8,13 +8,22 @@
 #include <rapidxml-1.13/rapidxml.hpp>
 #include <rapidxml-1.13/rapidxml_utils.hpp>
 
-SceneManager::SceneManager(RendererType render_type_) : renderType(render_type_) {}
+SceneManager::SceneManager(RendererType render_type_) : renderType(render_type_), camera(nullptr), trackball(nullptr) {}
 
-SceneManager::~SceneManager() = default;
+SceneManager::~SceneManager() {
+    delete trackball;
+    delete camera;
+    delete currentScene;
+    delete window;
+    delete renderer;
+}
 
 void SceneManager::Run() {
     while (!glfwWindowShouldClose(window->getGLFWwindow())) {
         glfwPollEvents();
+        if (trackball) {
+            trackball->HandleEvents();  // Handle trackball events
+        }
         if (renderType == RendererType::VULKAN) {
             VulkanRenderer *vRenderer = dynamic_cast<VulkanRenderer *>(renderer);
             if (vRenderer->BeginFrame()) {
@@ -28,6 +37,8 @@ void SceneManager::Run() {
 bool SceneManager::Initialize(const std::string &name_, const int width_, const int height_) {
     window = new Window(name_.c_str(), width_, height_, false);
     renderer = new VulkanRenderer(window);
+    camera = new Camera();  // Create camera
+    trackball = new Trackball(window->getGLFWwindow(), camera, dynamic_cast<VulkanRenderer*>(renderer));  // Create trackball with renderer
     currentScene = LoadScene("./assets/scenes/Scene1.xml");
 
     return true;
@@ -67,11 +78,17 @@ Scene *SceneManager::LoadScene(const std::string &name_) {
             std::stof(baseNode->first_attribute("u-y")->value()),
             std::stof(baseNode->first_attribute("u-z")->value())
         };
-        glm::mat4 view = glm::lookAt(eye, center, up);
-        glm::mat4 proj = glm::perspectiveZO(glm::radians(std::stof(baseNode->first_attribute("fov")->value())),
-                                            size.x / size.y, std::stof(baseNode->first_attribute("zNear")->value()),
-                                            std::stof(baseNode->first_attribute("zFar")->value()));
-        vRenderer->SetViewProjection(view, proj);
+
+        // Set up camera and trackball with initial view
+        camera->Perspective(glm::radians(std::stof(baseNode->first_attribute("fov")->value())),
+                          size.x / size.y,
+                          std::stof(baseNode->first_attribute("zNear")->value()),
+                          std::stof(baseNode->first_attribute("zFar")->value()));
+        camera->LookAt(eye, center, up);
+        trackball->setInitialView(eye, center, up);
+
+        // Set view and projection in renderer
+        vRenderer->SetViewProjection(camera->GetViewMatrix(), camera->GetProjectionMatrix());
 
         for (rapidxml::xml_node<> *node = baseNode->first_node(); node; node = node->next_sibling()) {
             auto *actor = new Actor(nullptr);

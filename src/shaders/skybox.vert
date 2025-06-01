@@ -11,8 +11,7 @@ layout(location = 0) out vec3 texCoord;
 
 void main() {
     texCoord = inPosition;
-    texCoord.y *= -1;
-    
+
     // Remove translation from view matrix to keep skybox centered on camera
     mat4 viewNoTranslation = mat4(mat3(ubo.view));
     vec4 pos = ubo.proj * viewNoTranslation * vec4(inPosition, 1.0);

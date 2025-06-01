@@ -43,7 +43,10 @@ file(GLOB_RECURSE MixedEngineSources CONFIGURE_DEPENDS
 add_executable(MixedEngine ${MixedEngineSources}
         src/ObjectComponent.cpp
         src/ObjectComponent.h
-        external/tiny_obj_loader.h)
+        external/tiny_obj_loader.h
+        src/Trackball.cpp
+        src/Trackball.h
+)
 
 target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog)
 

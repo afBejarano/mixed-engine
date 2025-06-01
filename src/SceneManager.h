@@ -6,6 +6,8 @@
 #include "render/Renderer.h"
 #include "window/Window.h"
 #include "render/Scene.h"
+#include "Camera.h"
+#include "Trackball.h"
 
 
 class SceneManager {
@@ -33,6 +35,8 @@ private:
     Window* window;
     Scene* currentScene;
     class Timer* timer;
+    Camera* camera;
+    Trackball* trackball;
 
     Renderer* renderer;
     unsigned int fps;
