@@ -278,12 +278,6 @@ std::vector<VkPhysicalDevice> VulkanRenderer::GetPhysicalDevices() const {
     return devices;
 }
 
-void VulkanRenderer::SetUpData() {
-    //buffer = CreateVertexBuffer(vertices);
-    index_buffer = CreateIndexBuffer(indices);
-    texture = CreateTexture("assets/textures/paving-stones.jpg");
-}
-
 void VulkanRenderer::PickPhysicalDevice() {
     auto devices = GetPhysicalDevices();
 
@@ -1016,9 +1010,17 @@ BufferHandle VulkanRenderer::CreateVertexBuffer(const std::vector<glm::vec3>& ve
 }
 
 void VulkanRenderer::DestroyBuffer(const BufferHandle buffer_handle) const {
+    if (vk_device_ == VK_NULL_HANDLE) return;
+    
     vkDeviceWaitIdle(vk_device_);
-    vkDestroyBuffer(vk_device_, buffer_handle.buffer, nullptr);
-    vkFreeMemory(vk_device_, buffer_handle.memory, nullptr);
+    
+    if (buffer_handle.buffer != VK_NULL_HANDLE) {
+        vkDestroyBuffer(vk_device_, buffer_handle.buffer, nullptr);
+    }
+    
+    if (buffer_handle.memory != VK_NULL_HANDLE) {
+        vkFreeMemory(vk_device_, buffer_handle.memory, nullptr);
+    }
 }
 
 void VulkanRenderer::RenderBuffer(BufferHandle buffer_handle, std::uint32_t vertex_count) {
@@ -1334,11 +1336,29 @@ TextureHandle VulkanRenderer::CreateTexture(const char *path) {
 }
 
 void VulkanRenderer::DestroyTexture(TextureHandle &handle) {
+    if (vk_device_ == VK_NULL_HANDLE) return;
+    
     vkDeviceWaitIdle(vk_device_);
-    vkFreeDescriptorSets(vk_device_, vk_texture_pool_, 1, &handle.descriptor_set);
-    vkDestroyImageView(vk_device_, handle.image_view, nullptr);
-    vkDestroyImage(vk_device_, handle.image, nullptr);
-    vkFreeMemory(vk_device_, handle.memory, nullptr);
+    
+    if (handle.descriptor_set != VK_NULL_HANDLE && vk_texture_pool_ != VK_NULL_HANDLE) {
+        vkFreeDescriptorSets(vk_device_, vk_texture_pool_, 1, &handle.descriptor_set);
+        handle.descriptor_set = VK_NULL_HANDLE;
+    }
+    
+    if (handle.image_view != VK_NULL_HANDLE) {
+        vkDestroyImageView(vk_device_, handle.image_view, nullptr);
+        handle.image_view = VK_NULL_HANDLE;
+    }
+    
+    if (handle.image != VK_NULL_HANDLE) {
+        vkDestroyImage(vk_device_, handle.image, nullptr);
+        handle.image = VK_NULL_HANDLE;
+    }
+    
+    if (handle.memory != VK_NULL_HANDLE) {
+        vkFreeMemory(vk_device_, handle.memory, nullptr);
+        handle.memory = VK_NULL_HANDLE;
+    }
 }
 
 void VulkanRenderer::SetTexture(TextureHandle &handle) {
@@ -1487,9 +1507,6 @@ VulkanRenderer::VulkanRenderer(Window* window): Renderer(window, RendererType::V
 
 VulkanRenderer::~VulkanRenderer() {
     VulkanRenderer::OnDestroy();
-    DestroyTexture(texture);
-    DestroyBuffer(buffer);
-    DestroyBuffer(index_buffer);
 }
 
 bool VulkanRenderer::OnCreate() {
@@ -1528,6 +1545,16 @@ void VulkanRenderer::OnDestroy() {
         if (vk_uniform_pool_ != VK_NULL_HANDLE) 
             vkDestroyDescriptorPool(vk_device_, vk_uniform_pool_, nullptr);
 
+        // Unmap memory before destroying buffers
+        if (uniform_buffer_location_) {
+            vkUnmapMemory(vk_device_, uniform_buffer_.memory);
+            uniform_buffer_location_ = nullptr;
+        }
+        if (bp_buffer_location_) {
+            vkUnmapMemory(vk_device_, bp_buffer_handle_.memory);
+            bp_buffer_location_ = nullptr;
+        }
+
         DestroyBuffer(uniform_buffer_);
         DestroyBuffer(bp_buffer_handle_);
 
@@ -1535,7 +1562,7 @@ void VulkanRenderer::OnDestroy() {
             vkDestroyDescriptorSetLayout(vk_device_, vk_uniform_set_layout_, nullptr);
 
         if (vk_uniform_bp_set_layout_ != VK_NULL_HANDLE)
-            vkDestroyDescriptorSetLayout(vk_device_, vk_uniform_set_layout_, nullptr);
+            vkDestroyDescriptorSetLayout(vk_device_, vk_uniform_bp_set_layout_, nullptr);
 
         vkDeviceWaitIdle(vk_device_);
 

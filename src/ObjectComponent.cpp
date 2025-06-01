@@ -14,6 +14,21 @@ bool ObjectComponent::OnCreate() {
 }
 
 void ObjectComponent::OnDestroy() {
+    // Destroy vertex and index buffers if they exist
+    if (buffer_.buffer != VK_NULL_HANDLE) {
+        vk_renderer_->DestroyBuffer(buffer_);
+    }
+    if (index_buffer_.buffer != VK_NULL_HANDLE) {
+        vk_renderer_->DestroyBuffer(index_buffer_);
+    }
+    
+    // Destroy all texture handles
+    for (auto& texture_handle : texture_handles_) {
+        if (texture_handle.image != VK_NULL_HANDLE) {
+            vk_renderer_->DestroyTexture(texture_handle);
+        }
+    }
+    texture_handles_.clear();
 }
 
 void ObjectComponent::Update(float deltaTime) {

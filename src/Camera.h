@@ -5,12 +5,6 @@
 #pragma once
 
 class Camera {
-private:
-	glm::mat4 projection;
-	glm::mat4 view;
-	glm::mat4 rotation;
-	glm::mat4 translate;
-
 public:
 	Camera();
 	~Camera() = default;
@@ -19,5 +13,11 @@ public:
 	inline glm::mat4 GetProjectionMatrix() { return projection; }
 	inline glm::mat4 GetViewMatrix() { return view; }
 	glm::mat4 SetViewMatrix(glm::mat4 _view) { return view = _view; }
+
+private:
+	glm::mat4 projection;
+	glm::mat4 view;
+	glm::mat4 rotation;
+	glm::mat4 translate;
 };
 

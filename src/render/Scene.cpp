@@ -11,12 +11,28 @@ Scene::Scene(Renderer* renderer_) : renderer(renderer_) {
 }
 
 Scene::~Scene() {
+    OnDestroy();
 }
 
 bool Scene::OnCreate() {
     if (renderer->getRendererType() == RendererType::VULKAN) {
     }
     return true;
+}
+
+void Scene::OnDestroy() {
+    // First destroy all components
+    for (auto* component : components_) {
+        if (component) {
+            component->OnDestroy();
+        }
+    }
+    
+    // Then delete and clear
+    for (auto* component : components_) {
+        delete component;
+    }
+    components_.clear();
 }
 
 void Scene::Render() {

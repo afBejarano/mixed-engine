@@ -96,6 +96,9 @@ public:
     TextureHandle CreateTexture(const char* path);
     void SetViewProjection(glm::mat4 matrix, glm::mat4 projection);
 
+    void DestroyTexture(TextureHandle &handle);
+    void DestroyBuffer(BufferHandle buffer_handle) const;
+
     glm::ivec2 GetWindowSize() {
         return window->GetFrameBufferSize();
     }
@@ -124,7 +127,6 @@ private:
     void CreateSignals();
     [[nodiscard]] std::uint32_t FindMemoryType(std::uint32_t memory_type_bits, VkMemoryPropertyFlags properties) const;
     BufferHandle CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
-    void DestroyBuffer(BufferHandle buffer_handle) const;
     void RenderBuffer(BufferHandle buffer_handle, std::uint32_t vertex_count);
     void RenderIndexedBuffer(BufferHandle vertex_buffer_handle, BufferHandle index_buffer_handle,
                              std::uint32_t index_count, std::int32_t index_offset);
@@ -139,7 +141,6 @@ private:
     void CreateDescriptorSets();
     void CreateTextureSampler();
     void CreateDepthResources();
-    void DestroyTexture(TextureHandle &handle);
     void SetTexture(TextureHandle &handle);
     void TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
     void CopyBufferToImage(VkBuffer buffer, VkImage image, glm::vec2 image_size);
@@ -217,11 +218,6 @@ private:
         Vertex{glm::vec3{0.5f, 0.5f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f}},
         Vertex{glm::vec3{-0.5f, 0.5f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}}
     };
-    BufferHandle buffer = {};
-    std::vector<std::uint32_t> indices = {0, 1, 2};
-    BufferHandle index_buffer = {};
-
-    TextureHandle texture = {};
 
     Skybox skybox_{};
 

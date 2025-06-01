@@ -85,7 +85,7 @@ Scene *SceneManager::LoadScene(const std::string &name_) {
                           std::stof(baseNode->first_attribute("zNear")->value()),
                           std::stof(baseNode->first_attribute("zFar")->value()));
         camera->LookAt(eye, center, up);
-        trackball->setInitialView(eye, center, up);
+        trackball->SetInitialView(eye, center, up);
 
         // Set view and projection in renderer
         vRenderer->SetViewProjection(camera->GetViewMatrix(), camera->GetProjectionMatrix());

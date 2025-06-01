@@ -42,6 +42,17 @@ void Actor::Render()const {
 }
 
 void Actor::RemoveAllComponents() {
+    // First destroy all components
+    for (auto* component : components) {
+        if (component) {
+            component->OnDestroy();
+        }
+    }
+    
+    // Then delete and clear
+    for (auto* component : components) {
+        delete component;
+    }
     components.clear();
 }
 
