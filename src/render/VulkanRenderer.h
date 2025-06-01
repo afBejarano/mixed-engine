@@ -47,6 +47,28 @@ struct SwapchainSupportCapabilities {
     }
 };
 
+struct Skybox {
+    VkImage image{};
+    VkDeviceMemory memory{};
+    VkImageView view{};
+    VkSampler sampler{};
+    VkDescriptorSet descriptor_set{};
+    VkDescriptorSetLayout descriptor_set_layout{};
+    VkPipelineLayout pipeline_layout{};
+    VkPipeline pipeline{};
+    VkDescriptorPool descriptor_pool{};
+    BufferHandle vertex_buffer{};
+    BufferHandle index_buffer{};
+
+    static VkVertexInputBindingDescription GetBindingDescription() {
+        return VkVertexInputBindingDescription{0, sizeof(glm::vec3), VK_VERTEX_INPUT_RATE_VERTEX};
+    }
+
+    static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions() {
+        return {{0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0}}; // position only
+    }
+};
+
 class VulkanRenderer : public Renderer {
 public:
     explicit VulkanRenderer(Window* window);
@@ -70,6 +92,7 @@ public:
 
     BufferHandle CreateIndexBuffer(std::vector<uint32_t> indices);
     BufferHandle CreateVertexBuffer(std::vector<oVertex> vertices);
+    BufferHandle CreateVertexBuffer(const std::vector<glm::vec3>& vertices);
     TextureHandle CreateTexture(const char* path);
     void SetViewProjection(glm::mat4 matrix, glm::mat4 projection);
 
@@ -95,6 +118,7 @@ private:
     void CreateFramebuffers();
     void CreateCommandPool();
     void CreateCommandBuffer();
+    void BeginCommands();
     void BeginCommands() const;
     void EndCommands() const;
     void CreateSignals();
@@ -198,4 +222,17 @@ private:
     BufferHandle index_buffer = {};
 
     TextureHandle texture = {};
+
+    Skybox skybox_{};
+
+    void CreateSkyboxResources();
+    void CreateSkyboxPipeline();
+    void CreateSkyboxDescriptorSetLayout();
+    void CreateSkyboxImage(const std::array<const char*, 6>& cubemap_paths);
+    void RenderSkybox();
+    std::vector<glm::vec3> CreateSkyboxVertices();
+    std::vector<uint32_t> CreateSkyboxIndices();
+
+    VkFormat FindDepthFormat() const;
+    bool HasStencilComponent(VkFormat format) const;
 };
