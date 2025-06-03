@@ -26,6 +26,23 @@ SceneManager::~SceneManager() {
 void SceneManager::Run() {
     while (!glfwWindowShouldClose(window->getGLFWwindow())) {
         glfwPollEvents();
+        
+        // Handle shader switching
+        if (renderType == RendererType::VULKAN) {
+            VulkanRenderer* vRenderer = dynamic_cast<VulkanRenderer*>(renderer);
+            
+            // Check for number keys 1-4
+            if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_1) == GLFW_PRESS) {
+                vRenderer->HandleShaderSwitch(GLFW_KEY_1);
+            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_2) == GLFW_PRESS) {
+                vRenderer->HandleShaderSwitch(GLFW_KEY_2);
+            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_3) == GLFW_PRESS) {
+                vRenderer->HandleShaderSwitch(GLFW_KEY_3);
+            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_4) == GLFW_PRESS) {
+                vRenderer->HandleShaderSwitch(GLFW_KEY_4);
+            }
+        }
+        
         if (trackball) {
             trackball->HandleEvents();  // Handle trackball events
         }

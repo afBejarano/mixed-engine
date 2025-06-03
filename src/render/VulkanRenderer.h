@@ -122,6 +122,9 @@ public:
         return window->GetFrameBufferSize();
     }
 
+    void ReloadPostProcessingShader(const std::string& fragment_shader_path);
+    void HandleShaderSwitch(int key);
+
 private:
     void PickPhysicalDevice();
     void CreateLogicalDeviceAndQueues();

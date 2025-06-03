@@ -2496,7 +2496,7 @@ void VulkanRenderer::CreatePostProcessingDescriptorSet() {
 
 void VulkanRenderer::CreatePostProcessingPipeline() {
     auto vert_shader = CreateShaderModule(ReadFile("shaders/post.vert.spv"));
-    auto frag_shader = CreateShaderModule(ReadFile("shaders/post.frag.spv"));
+    auto frag_shader = CreateShaderModule(ReadFile("shaders/nopost.frag.spv"));
 
     VkPipelineShaderStageCreateInfo vert_stage_info{};
     vert_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -2519,7 +2519,6 @@ void VulkanRenderer::CreatePostProcessingPipeline() {
     input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     input_assembly.primitiveRestartEnable = VK_FALSE;
-
     VkPipelineViewportStateCreateInfo viewport_state{};
     viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     viewport_state.viewportCount = 1;
@@ -2631,3 +2630,156 @@ void VulkanRenderer::DestroyPostProcessingResources() {
     if (post_processing_.depth_memory != VK_NULL_HANDLE)
         vkFreeMemory(vk_device_, post_processing_.depth_memory, nullptr);
 }
+
+void VulkanRenderer::ReloadPostProcessingShader(const std::string& fragment_shader_path) {
+    // Wait for the device to be idle before destroying the pipeline
+    vkDeviceWaitIdle(vk_device_);
+
+    // Destroy only the existing pipeline (not the layout or other resources)
+    if (post_processing_.pipeline != VK_NULL_HANDLE) {
+        vkDestroyPipeline(vk_device_, post_processing_.pipeline, nullptr);
+    }
+
+    // Create shader modules
+    auto vert_shader = CreateShaderModule(ReadFile("shaders/post.vert.spv"));
+    auto frag_shader = CreateShaderModule(ReadFile(fragment_shader_path));
+
+    VkPipelineShaderStageCreateInfo vert_stage_info{};
+    vert_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vert_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vert_stage_info.module = vert_shader;
+    vert_stage_info.pName = "main";
+
+    VkPipelineShaderStageCreateInfo frag_stage_info{};
+    frag_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    frag_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    frag_stage_info.module = frag_shader;
+    frag_stage_info.pName = "main";
+
+    std::array<VkPipelineShaderStageCreateInfo, 2> shader_stages = {vert_stage_info, frag_stage_info};
+
+    VkPipelineVertexInputStateCreateInfo vertex_input_info{};
+    vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+    VkPipelineInputAssemblyStateCreateInfo input_assembly{};
+    input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    input_assembly.primitiveRestartEnable = VK_FALSE;
+
+    VkPipelineViewportStateCreateInfo viewport_state{};
+    viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewport_state.viewportCount = 1;
+    viewport_state.scissorCount = 1;
+
+    VkPipelineRasterizationStateCreateInfo rasterizer{};
+    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer.depthClampEnable = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer.lineWidth = 1.0f;
+    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.depthBiasEnable = VK_FALSE;
+
+    VkPipelineMultisampleStateCreateInfo multisampling{};
+    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+    VkPipelineDepthStencilStateCreateInfo depth_stencil{};
+    depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depth_stencil.depthTestEnable = VK_FALSE;
+    depth_stencil.depthWriteEnable = VK_FALSE;
+    depth_stencil.depthCompareOp = VK_COMPARE_OP_ALWAYS;
+    depth_stencil.depthBoundsTestEnable = VK_FALSE;
+    depth_stencil.stencilTestEnable = VK_FALSE;
+
+    VkPipelineColorBlendAttachmentState color_blend_attachment{};
+    color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                          VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    color_blend_attachment.blendEnable = VK_FALSE;
+
+    VkPipelineColorBlendStateCreateInfo color_blending{};
+    color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    color_blending.logicOpEnable = VK_FALSE;
+    color_blending.attachmentCount = 1;
+    color_blending.pAttachments = &color_blend_attachment;
+
+    std::array<VkDynamicState, 2> dynamic_states = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+
+    VkPipelineDynamicStateCreateInfo dynamic_state{};
+    dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamic_state.dynamicStateCount = dynamic_states.size();
+    dynamic_state.pDynamicStates = dynamic_states.data();
+
+    // Create pipeline layout with push constants for both vertex and fragment stages
+    VkPushConstantRange push_constant_range{};
+    push_constant_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;  // Allow both stages
+    push_constant_range.offset = 0;
+    push_constant_range.size = sizeof(glm::mat4);
+
+    // Destroy existing pipeline layout if it exists
+    if (post_processing_.pipeline_layout != VK_NULL_HANDLE) {
+        vkDestroyPipelineLayout(vk_device_, post_processing_.pipeline_layout, nullptr);
+    }
+
+    VkPipelineLayoutCreateInfo pipeline_layout_info{};
+    pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipeline_layout_info.setLayoutCount = 1;
+    pipeline_layout_info.pSetLayouts = &post_processing_.descriptor_set_layout;
+    pipeline_layout_info.pushConstantRangeCount = 1;
+    pipeline_layout_info.pPushConstantRanges = &push_constant_range;
+
+    if (vkCreatePipelineLayout(vk_device_, &pipeline_layout_info, nullptr, &post_processing_.pipeline_layout) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create post-processing pipeline layout!");
+    }
+
+    // Create the new pipeline using the updated pipeline layout
+    VkGraphicsPipelineCreateInfo pipeline_info{};
+    pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipeline_info.stageCount = shader_stages.size();
+    pipeline_info.pStages = shader_stages.data();
+    pipeline_info.pVertexInputState = &vertex_input_info;
+    pipeline_info.pInputAssemblyState = &input_assembly;
+    pipeline_info.pViewportState = &viewport_state;
+    pipeline_info.pRasterizationState = &rasterizer;
+    pipeline_info.pMultisampleState = &multisampling;
+    pipeline_info.pDepthStencilState = &depth_stencil;
+    pipeline_info.pColorBlendState = &color_blending;
+    pipeline_info.pDynamicState = &dynamic_state;
+    pipeline_info.layout = post_processing_.pipeline_layout;
+    pipeline_info.renderPass = vk_render_pass_;
+    pipeline_info.subpass = 0;
+
+    if (vkCreateGraphicsPipelines(vk_device_, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &post_processing_.pipeline) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create post-processing pipeline!");
+    }
+
+    // Cleanup shader modules
+    vkDestroyShaderModule(vk_device_, vert_shader, nullptr);
+    vkDestroyShaderModule(vk_device_, frag_shader, nullptr);
+}
+
+void VulkanRenderer::HandleShaderSwitch(int key) {
+    switch(key) {
+        case GLFW_KEY_1:
+            ReloadPostProcessingShader("shaders/nopost.frag.spv");  // Default/no effect
+            break;
+        case GLFW_KEY_2:
+            ReloadPostProcessingShader("shaders/grayscale.frag.spv");  // Grayscale
+            break;
+        case GLFW_KEY_3:
+            ReloadPostProcessingShader("shaders/colorReduction.frag.spv");  // Retro effect
+            break;
+        case GLFW_KEY_4:
+            ReloadPostProcessingShader("shaders/scanlines.frag.spv");  // Film grain
+            break;
+        default:
+            spdlog::warn("Unhandled key press in shader switch: {}", key);
+            break;
+    }
+}
+
