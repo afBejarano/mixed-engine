@@ -780,15 +780,26 @@ void VulkanRenderer::BeginCommands() {
     VkResult result = vkBeginCommandBuffer(vk_command_buffer_, &begin_info);
     if (result != VK_SUCCESS) throw std::runtime_error("failed to begin command buffer commands");
 
-    std::array<VkClearValue, 2> clear_value = {};
-    clear_value[0].color = {0.2f, 0.3f, 0.3f, 1.0f}; // Use a different color to help debug
-    clear_value[1].depthStencil = {1.0f, 0};
+    // First render pass (scene)
+    std::array<VkClearValue, 2> clear_values = {};  // Zero initialize all values
+    
+    // Initialize color clear value
+    clear_values[0].color = {0.2f, 0.3f, 0.3f, 1.0f};
+    
+    // Initialize depth clear value
+    VkClearDepthStencilValue depth_clear = {};
+    depth_clear.depth = 1.0f;
+    depth_clear.stencil = 0;
+    clear_values[1].depthStencil = depth_clear;
 
-    VkRenderPassBeginInfo render_pass_info = {
-        VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, nullptr, vk_render_pass_,
-        vk_swapchain_framebuffers_[current_image_index_],
-        0, 0, vk_extent_, clear_value.size(), clear_value.data()
-    };
+    VkRenderPassBeginInfo render_pass_info{};
+    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    render_pass_info.renderPass = post_processing_.render_pass;  // Use the main render pass for the first pass
+    render_pass_info.framebuffer = post_processing_.framebuffer;
+    render_pass_info.renderArea = {{0, 0}, vk_extent_};
+    render_pass_info.clearValueCount = clear_values.size();
+    render_pass_info.pClearValues = clear_values.data();
+
     vkCmdBeginRenderPass(vk_command_buffer_, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
     RenderSkybox();
@@ -803,6 +814,43 @@ void VulkanRenderer::BeginCommands() {
 
 void VulkanRenderer::EndCommands() const {
     vkCmdEndRenderPass(vk_command_buffer_);
+
+    // Second render pass (post-processing)
+    std::array<VkClearValue, 2> clear_values = {};  // Zero initialize all values
+    
+    // Initialize color clear value
+    clear_values[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
+    
+    // Initialize depth clear value
+    VkClearDepthStencilValue depth_clear = {};
+    depth_clear.depth = 1.0f;
+    depth_clear.stencil = 0;
+    clear_values[1].depthStencil = depth_clear;
+
+    VkRenderPassBeginInfo render_pass_info{};
+    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    render_pass_info.renderPass = vk_render_pass_;
+    render_pass_info.framebuffer = vk_swapchain_framebuffers_[current_image_index_];
+    render_pass_info.renderArea = {{0, 0}, vk_extent_};
+    render_pass_info.clearValueCount = clear_values.size();
+    render_pass_info.pClearValues = clear_values.data();
+
+    vkCmdBeginRenderPass(vk_command_buffer_, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+    vkCmdBindPipeline(vk_command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, post_processing_.pipeline);
+    vkCmdBindDescriptorSets(vk_command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                           post_processing_.pipeline_layout, 0, 1,
+                           &post_processing_.descriptor_set, 0, nullptr);
+
+    VkViewport viewport = GetViewport();
+    VkRect2D scissor = GetScissor();
+    vkCmdSetViewport(vk_command_buffer_, 0, 1, &viewport);
+    vkCmdSetScissor(vk_command_buffer_, 0, 1, &scissor);
+
+    vkCmdDraw(vk_command_buffer_, 3, 1, 0, 0);  // Draw fullscreen triangle
+
+    vkCmdEndRenderPass(vk_command_buffer_);
+
     VkResult result = vkEndCommandBuffer(vk_command_buffer_);
     if (result != VK_SUCCESS) throw std::runtime_error("failed to end command buffer commands");
 }
@@ -1549,10 +1597,13 @@ VulkanRenderer::~VulkanRenderer() {
 }
 
 bool VulkanRenderer::OnCreate() {
+    InitializeVulkan();
     return true;
 }
 
 void VulkanRenderer::OnDestroy() {
+    DestroyPostProcessingResources();
+    
     if (vk_device_ != VK_NULL_HANDLE) {
         vkDeviceWaitIdle(vk_device_);
 
@@ -1671,6 +1722,8 @@ void VulkanRenderer::InitializeVulkan() {
 
     // Create skybox resources after other resources are initialized
     CreateSkyboxResources();
+
+    CreatePostProcessingResources();
 }
 
 void VulkanRenderer::CreateSkyboxResources() {
@@ -2216,4 +2269,365 @@ VkFormat VulkanRenderer::FindDepthFormat() const {
 
 bool VulkanRenderer::HasStencilComponent(VkFormat format) const {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+}
+
+void VulkanRenderer::CreatePostProcessingResources() {
+    CreatePostProcessingRenderPass();
+    CreatePostProcessingFramebuffer();
+    CreatePostProcessingDescriptorSet();
+    CreatePostProcessingPipeline();
+}
+
+void VulkanRenderer::CreatePostProcessingRenderPass() {
+    // Color attachment
+    VkAttachmentDescription color_attachment{};
+    color_attachment.format = vk_surface_format_.format;
+    color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    color_attachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    // Depth attachment
+    VkAttachmentDescription depth_attachment{};
+    depth_attachment.format = FindDepthFormat();
+    depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference color_attachment_ref{};
+    color_attachment_ref.attachment = 0;
+    color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depth_attachment_ref{};
+    depth_attachment_ref.attachment = 1;
+    depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &color_attachment_ref;
+    subpass.pDepthStencilAttachment = &depth_attachment_ref;
+
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | 
+                             VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                             VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependency.dependencyFlags = 0;
+
+    std::array<VkAttachmentDescription, 2> attachments = {color_attachment, depth_attachment};
+    VkRenderPassCreateInfo render_pass_info{};
+    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    render_pass_info.attachmentCount = attachments.size();
+    render_pass_info.pAttachments = attachments.data();
+    render_pass_info.subpassCount = 1;
+    render_pass_info.pSubpasses = &subpass;
+    render_pass_info.dependencyCount = 1;
+    render_pass_info.pDependencies = &dependency;
+
+    if (vkCreateRenderPass(vk_device_, &render_pass_info, nullptr, &post_processing_.render_pass) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create post-processing render pass!");
+    }
+}
+
+void VulkanRenderer::CreatePostProcessingFramebuffer() {
+    // Create color image
+    VkImageCreateInfo image_info{};
+    image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_info.imageType = VK_IMAGE_TYPE_2D;
+    image_info.extent.width = vk_extent_.width;
+    image_info.extent.height = vk_extent_.height;
+    image_info.extent.depth = 1;
+    image_info.mipLevels = 1;
+    image_info.arrayLayers = 1;
+    image_info.format = vk_surface_format_.format;
+    image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    image_info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateImage(vk_device_, &image_info, nullptr, &post_processing_.color_image) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create post-processing color image!");
+    }
+
+    VkMemoryRequirements mem_requirements;
+    vkGetImageMemoryRequirements(vk_device_, post_processing_.color_image, &mem_requirements);
+
+    VkMemoryAllocateInfo alloc_info{};
+    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    alloc_info.allocationSize = mem_requirements.size;
+    alloc_info.memoryTypeIndex = FindMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    if (vkAllocateMemory(vk_device_, &alloc_info, nullptr, &post_processing_.color_memory) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate post-processing image memory!");
+    }
+
+    vkBindImageMemory(vk_device_, post_processing_.color_image, post_processing_.color_memory, 0);
+
+    // Create depth image
+    image_info.format = FindDepthFormat();
+    image_info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+    if (vkCreateImage(vk_device_, &image_info, nullptr, &post_processing_.depth_image) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create post-processing depth image!");
+    }
+
+    vkGetImageMemoryRequirements(vk_device_, post_processing_.depth_image, &mem_requirements);
+
+    alloc_info.allocationSize = mem_requirements.size;
+    alloc_info.memoryTypeIndex = FindMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    if (vkAllocateMemory(vk_device_, &alloc_info, nullptr, &post_processing_.depth_memory) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate post-processing depth memory!");
+    }
+
+    vkBindImageMemory(vk_device_, post_processing_.depth_image, post_processing_.depth_memory, 0);
+
+    // Create image views
+    post_processing_.color_view = CreateImageView(post_processing_.color_image, vk_surface_format_.format, VK_IMAGE_ASPECT_COLOR_BIT);
+    post_processing_.depth_view = CreateImageView(post_processing_.depth_image, FindDepthFormat(), VK_IMAGE_ASPECT_DEPTH_BIT);
+
+    // Create framebuffer
+    std::array<VkImageView, 2> attachments = {
+        post_processing_.color_view,
+        post_processing_.depth_view
+    };
+
+    VkFramebufferCreateInfo framebuffer_info{};
+    framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebuffer_info.renderPass = post_processing_.render_pass;
+    framebuffer_info.attachmentCount = attachments.size();
+    framebuffer_info.pAttachments = attachments.data();
+    framebuffer_info.width = vk_extent_.width;
+    framebuffer_info.height = vk_extent_.height;
+    framebuffer_info.layers = 1;
+
+    if (vkCreateFramebuffer(vk_device_, &framebuffer_info, nullptr, &post_processing_.framebuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create post-processing framebuffer!");
+    }
+}
+
+void VulkanRenderer::CreatePostProcessingDescriptorSet() {
+    // Create descriptor set layout
+    VkDescriptorSetLayoutBinding sampler_binding{};
+    sampler_binding.binding = 0;
+    sampler_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    sampler_binding.descriptorCount = 1;
+    sampler_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutCreateInfo layout_info{};
+    layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layout_info.bindingCount = 1;
+    layout_info.pBindings = &sampler_binding;
+
+    if (vkCreateDescriptorSetLayout(vk_device_, &layout_info, nullptr, &post_processing_.descriptor_set_layout) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create post-processing descriptor set layout!");
+    }
+
+    // Create descriptor pool
+    VkDescriptorPoolSize pool_size{};
+    pool_size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    pool_size.descriptorCount = 1;
+
+    VkDescriptorPoolCreateInfo pool_info{};
+    pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    pool_info.poolSizeCount = 1;
+    pool_info.pPoolSizes = &pool_size;
+    pool_info.maxSets = 1;
+
+    if (vkCreateDescriptorPool(vk_device_, &pool_info, nullptr, &post_processing_.descriptor_pool) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create post-processing descriptor pool!");
+    }
+
+    // Create descriptor set
+    VkDescriptorSetAllocateInfo alloc_info{};
+    alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    alloc_info.descriptorPool = post_processing_.descriptor_pool;
+    alloc_info.descriptorSetCount = 1;
+    alloc_info.pSetLayouts = &post_processing_.descriptor_set_layout;
+
+    if (vkAllocateDescriptorSets(vk_device_, &alloc_info, &post_processing_.descriptor_set) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate post-processing descriptor set!");
+    }
+
+    // Create sampler
+    VkSamplerCreateInfo sampler_info{};
+    sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    sampler_info.magFilter = VK_FILTER_LINEAR;
+    sampler_info.minFilter = VK_FILTER_LINEAR;
+    sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+    if (vkCreateSampler(vk_device_, &sampler_info, nullptr, &post_processing_.sampler) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create post-processing sampler!");
+    }
+
+    // Update descriptor set
+    VkDescriptorImageInfo image_info{};
+    image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    image_info.imageView = post_processing_.color_view;
+    image_info.sampler = post_processing_.sampler;
+
+    VkWriteDescriptorSet descriptor_write{};
+    descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptor_write.dstSet = post_processing_.descriptor_set;
+    descriptor_write.dstBinding = 0;
+    descriptor_write.dstArrayElement = 0;
+    descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptor_write.descriptorCount = 1;
+    descriptor_write.pImageInfo = &image_info;
+
+    vkUpdateDescriptorSets(vk_device_, 1, &descriptor_write, 0, nullptr);
+}
+
+void VulkanRenderer::CreatePostProcessingPipeline() {
+    auto vert_shader = CreateShaderModule(ReadFile("shaders/post.vert.spv"));
+    auto frag_shader = CreateShaderModule(ReadFile("shaders/post.frag.spv"));
+
+    VkPipelineShaderStageCreateInfo vert_stage_info{};
+    vert_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vert_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vert_stage_info.module = vert_shader;
+    vert_stage_info.pName = "main";
+
+    VkPipelineShaderStageCreateInfo frag_stage_info{};
+    frag_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    frag_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    frag_stage_info.module = frag_shader;
+    frag_stage_info.pName = "main";
+
+    std::array<VkPipelineShaderStageCreateInfo, 2> shader_stages = {vert_stage_info, frag_stage_info};
+
+    VkPipelineVertexInputStateCreateInfo vertex_input_info{};
+    vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+    VkPipelineInputAssemblyStateCreateInfo input_assembly{};
+    input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    input_assembly.primitiveRestartEnable = VK_FALSE;
+
+    VkPipelineViewportStateCreateInfo viewport_state{};
+    viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewport_state.viewportCount = 1;
+    viewport_state.scissorCount = 1;
+
+    VkPipelineRasterizationStateCreateInfo rasterizer{};
+    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer.depthClampEnable = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer.lineWidth = 1.0f;
+    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.depthBiasEnable = VK_FALSE;
+
+    VkPipelineMultisampleStateCreateInfo multisampling{};
+    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+    // Add depth stencil state
+    VkPipelineDepthStencilStateCreateInfo depth_stencil{};
+    depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depth_stencil.depthTestEnable = VK_FALSE;  // Disable depth testing
+    depth_stencil.depthWriteEnable = VK_FALSE; // Don't write to depth buffer
+    depth_stencil.depthCompareOp = VK_COMPARE_OP_ALWAYS;
+    depth_stencil.depthBoundsTestEnable = VK_FALSE;
+    depth_stencil.stencilTestEnable = VK_FALSE;
+
+    VkPipelineColorBlendAttachmentState color_blend_attachment{};
+    color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    color_blend_attachment.blendEnable = VK_FALSE;
+
+    VkPipelineColorBlendStateCreateInfo color_blending{};
+    color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    color_blending.logicOpEnable = VK_FALSE;
+    color_blending.attachmentCount = 1;
+    color_blending.pAttachments = &color_blend_attachment;
+
+    std::array<VkDynamicState, 2> dynamic_states = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+
+    VkPipelineDynamicStateCreateInfo dynamic_state{};
+    dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamic_state.dynamicStateCount = dynamic_states.size();
+    dynamic_state.pDynamicStates = dynamic_states.data();
+
+    VkPipelineLayoutCreateInfo pipeline_layout_info{};
+    pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipeline_layout_info.setLayoutCount = 1;
+    pipeline_layout_info.pSetLayouts = &post_processing_.descriptor_set_layout;
+
+    if (vkCreatePipelineLayout(vk_device_, &pipeline_layout_info, nullptr, &post_processing_.pipeline_layout) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create post-processing pipeline layout!");
+    }
+
+    VkGraphicsPipelineCreateInfo pipeline_info{};
+    pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipeline_info.stageCount = shader_stages.size();
+    pipeline_info.pStages = shader_stages.data();
+    pipeline_info.pVertexInputState = &vertex_input_info;
+    pipeline_info.pInputAssemblyState = &input_assembly;
+    pipeline_info.pViewportState = &viewport_state;
+    pipeline_info.pRasterizationState = &rasterizer;
+    pipeline_info.pMultisampleState = &multisampling;
+    pipeline_info.pDepthStencilState = &depth_stencil;  // Add the depth stencil state
+    pipeline_info.pColorBlendState = &color_blending;
+    pipeline_info.pDynamicState = &dynamic_state;
+    pipeline_info.layout = post_processing_.pipeline_layout;
+    pipeline_info.renderPass = vk_render_pass_;
+    pipeline_info.subpass = 0;
+
+    if (vkCreateGraphicsPipelines(vk_device_, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &post_processing_.pipeline) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create post-processing pipeline!");
+    }
+
+    vkDestroyShaderModule(vk_device_, vert_shader, nullptr);
+    vkDestroyShaderModule(vk_device_, frag_shader, nullptr);
+}
+
+void VulkanRenderer::DestroyPostProcessingResources() {
+    if (post_processing_.sampler != VK_NULL_HANDLE)
+        vkDestroySampler(vk_device_, post_processing_.sampler, nullptr);
+    if (post_processing_.descriptor_pool != VK_NULL_HANDLE)
+        vkDestroyDescriptorPool(vk_device_, post_processing_.descriptor_pool, nullptr);
+    if (post_processing_.descriptor_set_layout != VK_NULL_HANDLE)
+        vkDestroyDescriptorSetLayout(vk_device_, post_processing_.descriptor_set_layout, nullptr);
+    if (post_processing_.pipeline != VK_NULL_HANDLE)
+        vkDestroyPipeline(vk_device_, post_processing_.pipeline, nullptr);
+    if (post_processing_.pipeline_layout != VK_NULL_HANDLE)
+        vkDestroyPipelineLayout(vk_device_, post_processing_.pipeline_layout, nullptr);
+    if (post_processing_.framebuffer != VK_NULL_HANDLE)
+        vkDestroyFramebuffer(vk_device_, post_processing_.framebuffer, nullptr);
+    if (post_processing_.render_pass != VK_NULL_HANDLE)
+        vkDestroyRenderPass(vk_device_, post_processing_.render_pass, nullptr);
+    if (post_processing_.color_view != VK_NULL_HANDLE)
+        vkDestroyImageView(vk_device_, post_processing_.color_view, nullptr);
+    if (post_processing_.color_image != VK_NULL_HANDLE)
+        vkDestroyImage(vk_device_, post_processing_.color_image, nullptr);
+    if (post_processing_.color_memory != VK_NULL_HANDLE)
+        vkFreeMemory(vk_device_, post_processing_.color_memory, nullptr);
+    if (post_processing_.depth_view != VK_NULL_HANDLE)
+        vkDestroyImageView(vk_device_, post_processing_.depth_view, nullptr);
+    if (post_processing_.depth_image != VK_NULL_HANDLE)
+        vkDestroyImage(vk_device_, post_processing_.depth_image, nullptr);
+    if (post_processing_.depth_memory != VK_NULL_HANDLE)
+        vkFreeMemory(vk_device_, post_processing_.depth_memory, nullptr);
 }

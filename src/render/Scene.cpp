@@ -41,22 +41,7 @@ void Scene::OnDestroy() {
 void Scene::Render() {
     if (renderer->getRendererType() == RendererType::VULKAN) {
         VulkanRenderer *vRenderer = dynamic_cast<VulkanRenderer *>(renderer);
-        
-        // Debug output for light data
-        for (int i = 0; i < global_lighting_->numLights; i++) {
-            spdlog::info("Light {}: Position ({}, {}, {}, {}), Color ({}, {}, {}, {})",
-                i,
-                global_lighting_->lights[i].position.x,
-                global_lighting_->lights[i].position.y,
-                global_lighting_->lights[i].position.z,
-                global_lighting_->lights[i].position.w,
-                global_lighting_->lights[i].diffuse.x,
-                global_lighting_->lights[i].diffuse.y,
-                global_lighting_->lights[i].diffuse.z,
-                global_lighting_->lights[i].diffuse.w
-            );
-        }
-        
+
         vRenderer->SetLightsUBO(global_lighting_);
     }
     for (Component *component: components_) {

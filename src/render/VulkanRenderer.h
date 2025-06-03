@@ -70,6 +70,23 @@ struct Skybox {
     }
 };
 
+struct PostProcessing {
+    VkRenderPass render_pass;
+    VkFramebuffer framebuffer;
+    VkImage color_image;
+    VkDeviceMemory color_memory;
+    VkImageView color_view;
+    VkImage depth_image;
+    VkDeviceMemory depth_memory;
+    VkImageView depth_view;
+    VkPipeline pipeline;
+    VkPipelineLayout pipeline_layout;
+    VkDescriptorSetLayout descriptor_set_layout;
+    VkDescriptorPool descriptor_pool;
+    VkDescriptorSet descriptor_set;
+    VkSampler sampler;
+};
+
 class VulkanRenderer : public Renderer {
 public:
     explicit VulkanRenderer(Window* window);
@@ -239,4 +256,13 @@ private:
 
     VkFormat FindDepthFormat() const;
     bool HasStencilComponent(VkFormat format) const;
+
+    void CreatePostProcessingResources();
+    void CreatePostProcessingPipeline();
+    void CreatePostProcessingRenderPass();
+    void CreatePostProcessingFramebuffer();
+    void CreatePostProcessingDescriptorSet();
+    void DestroyPostProcessingResources();
+    
+    PostProcessing post_processing_{};
 };
