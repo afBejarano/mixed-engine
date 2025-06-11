@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Scene>
+    <State>
+        <Camera>
+            <Eye x="0.0" y="-1.0" z="-20.0"/>
+            <Center x="0.0" y="-1.0" z="0.0"/>
+            <Up x="0.0" y="-1.0" z="0.0"/>
+        </Camera>
+        <Perspective fov="60.0" zNear="0.1" zFar="100"/>
+        <Skybox>
+            <Right path="assets/skyboxes/Stars/StarSkyboxPosx.png"/>
+            <Left path="assets/skyboxes/Stars/StarSkyboxNegx.png"/>
+            <Top path="assets/skyboxes/Stars/StarSkyboxPosy.png"/>
+            <Bottom path="assets/skyboxes/Stars/StarSkyboxNegy.png"/>
+            <Front path="assets/skyboxes/Stars/StarSkyboxPosz.png"/>
+            <Back path="assets/skyboxes/Stars/StarSkyboxNegz.png"/>
+        </Skybox>
+    </State>
+    <Actors>
+        <Actor>
+            <ObjectComponent obj="./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+                             basedir="./assets/Spaceship/"/>
+            <TransformComponent>
+                <Position x="-10.0" y="0.0" z="5.0"/>
+                <Orientation x="180.0" y="0.0" z="0.0"/>
+                <Scale x="1.0" y="1.0" z="1.0"/>
+            </TransformComponent>
+        </Actor>
+        <Actor>
+            <ObjectComponent obj="./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+                             basedir="./assets/Spaceship/"/>
+            <TransformComponent>
+                <Position x="10.0" y="0.0" z="5.0"/>
+                <Orientation x="180.0" y="0.0" z="0.0"/>
+                <Scale x="1.0" y="1.0" z="1.0"/>
+            </TransformComponent>
+        </Actor>
+        <Actor>
+            <ObjectComponent obj="./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+                             basedir="./assets/Spaceship/"/>
+            <TransformComponent>
+                <Position x="0.0" y="0.0" z="0.0"/>
+                <Orientation x="180.0" y="0.0" z="0.0"/>
+                <Scale x="1.0" y="1.0" z="1.0"/>
+            </TransformComponent>
+        </Actor>
+    </Actors>
+    <Lights>
+        <Light>
+            <Position x="15.0" y="-10.0" z="0.0" w="1.0"/>
+            <Diffuse x="5.0" y="0.0" z="0.0" w="1.0"/>
+        </Light>
+        <Light>
+            <Position x="0.0" y="-10.0" z="0.0" w="1.0"/>
+            <Diffuse x="0.0" y="5.0" z="0.0" w="1.0"/>
+        </Light>
+        <Light>
+            <Position x="-15.0" y="-10.0" z="0.0" w="1.0"/>
+            <Diffuse x="0.0" y="0.0" z="1.0" w="1.0"/>
+        </Light>
+    </Lights>
+</Scene>

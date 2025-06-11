@@ -59,12 +59,14 @@ bool SceneManager::Initialize(const std::string &name_, const int width_, const 
             {GLFW_KEY_9, "shaders/vignette.frag.spv"},
             {GLFW_KEY_0, "shaders/brightness.frag.spv"},
             {GLFW_KEY_P, "shaders/bloom.frag.spv"},
+            {GLFW_KEY_G, "shaders/glitch.frag.spv"},
+            {GLFW_KEY_D, "shaders/dream.frag.spv"},
         };
     }
     camera = new Camera(); // Create camera
     trackball = new Trackball(window->getGLFWwindow(), camera, dynamic_cast<VulkanRenderer *>(renderer));
     // Create trackball with renderer
-    currentScene = LoadScene("./assets/scenes/Scene1.xml");
+    currentScene = LoadScene("./assets/scenes/Scene2.xml");
 
     return true;
 }

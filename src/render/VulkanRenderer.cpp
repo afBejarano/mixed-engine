@@ -797,15 +797,8 @@ void VulkanRenderer::EndCommands() const {
 
     // Second render pass (post-processing)
     std::array<VkClearValue, 2> clear_values = {}; // Zero initialize all values
-
-    // Initialize color clear value
     clear_values[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
-
-    // Initialize depth clear value
-    VkClearDepthStencilValue depth_clear = {};
-    depth_clear.depth = 1.0f;
-    depth_clear.stencil = 0;
-    clear_values[1].depthStencil = depth_clear;
+    clear_values[1].depthStencil = {1.0f, 0};
 
     VkRenderPassBeginInfo render_pass_info{};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -821,6 +814,16 @@ void VulkanRenderer::EndCommands() const {
     vkCmdBindDescriptorSets(vk_command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             post_processing_.pipeline.pipeline_layout, 0, 1,
                             &post_processing_.descriptor_set, 0, nullptr);
+
+    // Update time push constant
+    static auto startTime = std::chrono::high_resolution_clock::now();
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float>(currentTime - startTime).count();
+    
+    vkCmdPushConstants(vk_command_buffer_, 
+                      post_processing_.pipeline.pipeline_layout,
+                      VK_SHADER_STAGE_FRAGMENT_BIT,
+                      0, sizeof(float), &time);
 
     VkViewport viewport = GetViewport();
     VkRect2D scissor = GetScissor();
@@ -2099,7 +2102,7 @@ void VulkanRenderer::RenderSkybox() {
 }
 
 VkFormat VulkanRenderer::FindDepthFormat() const {
-    const std::array<VkFormat, 3> candidates = {
+    const std::array candidates = {
         VK_FORMAT_D32_SFLOAT,
         VK_FORMAT_D32_SFLOAT_S8_UINT,
         VK_FORMAT_D24_UNORM_S8_UINT
@@ -2177,7 +2180,7 @@ void VulkanRenderer::CreatePostProcessingRenderPass() {
                                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
     dependency.dependencyFlags = 0;
 
-    std::array<VkAttachmentDescription, 2> attachments = {color_attachment, depth_attachment};
+    std::array attachments = {color_attachment, depth_attachment};
     VkRenderPassCreateInfo render_pass_info{};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     render_pass_info.attachmentCount = attachments.size();
@@ -2253,7 +2256,7 @@ void VulkanRenderer::CreatePostProcessingFramebuffer() {
                                                   VK_IMAGE_ASPECT_DEPTH_BIT);
 
     // Create framebuffer
-    std::array<VkImageView, 2> attachments = {
+    std::array attachments = {
         post_processing_.color_view,
         post_processing_.depth_view
     };
@@ -2349,8 +2352,13 @@ void VulkanRenderer::CreatePostProcessingDescriptorSet() {
 
 void VulkanRenderer::CreatePostProcessingPipeline() {
     post_processing_.pipeline = {
-        {"shaders/post.vert.spv", "shaders/nopost.frag.spv"}, {}, {}, VK_CULL_MODE_BACK_BIT,
-        {false, false, VK_COMPARE_OP_ALWAYS}, {}, {post_processing_.descriptor_set_layout},
+        {"shaders/post.vert.spv", "shaders/nopost.frag.spv"}, 
+        {}, 
+        {}, 
+        VK_CULL_MODE_BACK_BIT,
+        {false, false, VK_COMPARE_OP_ALWAYS},
+        {{VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float)}},  // Push constant for time
+        {post_processing_.descriptor_set_layout}
     };
     CreatePipeline(post_processing_.pipeline);
 }
