@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Scene>
+    <State>
+        <Camera>
+            <Eye x="0.0" y="-1.0" z="-10.0"/>
+            <Center x="0.0" y="-1.0" z="0.0"/>
+            <Up x="0.0" y="-1.0" z="0.0"/>
+        </Camera>
+        <Perspective fov="60.0" zNear="0.1" zFar="100"/>
+        <Skybox>
+            <Right path="assets/skyboxes/Underwater/Underwater Box_Posx.png"/>
+            <Left path="assets/skyboxes/Underwater/Underwater Box_Negx.png"/>
+            <Top path="assets/skyboxes/Underwater/Underwater Box_Posy.png"/>
+            <Bottom path="assets/skyboxes/Underwater/Underwater Box_Negy.png"/>
+            <Front path="assets/skyboxes/Underwater/Underwater Box_Posz.png"/>
+            <Back path="assets/skyboxes/Underwater/Underwater Box_Negz.png"/>
+        </Skybox>
+    </State>
+    <Actors>
+        <Actor>
+            <ObjectComponent obj="./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+                             basedir="./assets/Spaceship/"/>
+            <TransformComponent>
+                <Position x="-5.0" y="0.0" z="0.0"/>
+                <Orientation x="0.0" y="0.0" z="0.0"/>
+                <Scale x="1.0" y="1.0" z="1.0"/>
+            </TransformComponent>
+        </Actor>
+        <Actor>
+            <ObjectComponent obj="./assets/Spider/spider.obj"
+                             basedir="./assets/Spider/"/>
+            <TransformComponent>
+                <Position x="5.0" y="0.0" z="0.0"/>
+                <Orientation x="0.0" y="90.0" z="0.0"/>
+                <Scale x="0.05" y="0.05" z="0.05"/>
+            </TransformComponent>
+        </Actor>
+    </Actors>
+</Scene>

@@ -15,11 +15,6 @@ Scene::~Scene() {
 }
 
 bool Scene::OnCreate() {
-    global_lighting_ = new GlobalLighting{};
-    global_lighting_->lights[0] = LightUBO{{7.0, -3.0, 0.0, 1.0}, {1.0, 0.0, 0.0, 1.0}};  // Red light
-    global_lighting_->lights[1] = LightUBO{{0.0, -3.0, 0.0, 1.0}, {0.0, 1.0, 0.0, 1.0}};  // Green light
-    global_lighting_->lights[2] = LightUBO{{-7.0, -3.0, 0.0, 1.0}, {0.0, 0.0, 1.0, 1.0}};  // Blue light
-    global_lighting_->numLights = 3;
     return true;
 }
 
@@ -41,7 +36,6 @@ void Scene::OnDestroy() {
 void Scene::Render() {
     if (renderer->getRendererType() == RendererType::VULKAN) {
         VulkanRenderer *vRenderer = dynamic_cast<VulkanRenderer *>(renderer);
-
         vRenderer->SetLightsUBO(global_lighting_);
     }
     for (Component *component: components_) {

@@ -75,66 +75,101 @@ void SceneManager::ChangeScene(SCENE_NUMBER scene_) {}
 
 void SceneManager::BuildScene(SCENE_NUMBER scene_) {}
 
-glm::vec3 GetVector(rapidxml::xml_node<> *node, const std::string &namex, const std::string &namey,
-                    const std::string &namez) {
+glm::vec3 GetVector(rapidxml::xml_node<> *node, const std::string &namex = "x", const std::string &namey = "y",
+                    const std::string &namez = "z") {
     return {
         std::stof(node->first_attribute(namex.c_str())->value()),
         std::stof(node->first_attribute(namey.c_str())->value()),
         std::stof(node->first_attribute(namez.c_str())->value())
     };
 }
+glm::vec4 GetVector4(rapidxml::xml_node<> *node, const std::string &namex = "x", const std::string &namey = "y",
+                    const std::string &namez = "z", const std::string &namew = "w") {
+    return {
+        std::stof(node->first_attribute(namex.c_str())->value()),
+        std::stof(node->first_attribute(namey.c_str())->value()),
+        std::stof(node->first_attribute(namez.c_str())->value()),
+        std::stof(node->first_attribute(namew.c_str())->value())
+    };
+}
+
+void LoadActors(VulkanRenderer *vRenderer, const rapidxml::xml_node<> *baseNode, Scene *scene) {
+    for (const rapidxml::xml_node<> *node = baseNode->first_node(); node; node = node->next_sibling()) {
+        auto *actor = new Actor(nullptr);
+        for (const auto *node2 = node->first_node(); node2; node2 = node2->next_sibling()) {
+            if (std::string(node2->name()) == "ObjectComponent")
+                actor->AddComponent<ObjectComponent>(node2->first_attribute("obj")->value(),
+                                                     node2->first_attribute("basedir")->value(), actor, vRenderer);
+            else if (std::string(node2->name()) == "TransformComponent") {
+                auto *transform = node2->first_node("Position");
+                auto position = GetVector(transform);
+
+                auto *orientation = node2->first_node("Orientation");
+                auto v_orientation = glm::radians(GetVector(orientation));
+
+                auto *scale = node2->first_node("Scale");
+                auto v_scale = GetVector(scale);
+
+                actor->AddComponent<TransformComponent, Component *, glm::vec3, glm::quat, glm::vec3>(
+                    actor, std::move(position), glm::quat(v_orientation), std::move(v_scale));
+            }
+        }
+        scene->AddActor(actor);
+    }
+}
 
 Scene *SceneManager::LoadScene(const std::string &name_) {
-    rapidxml::file<> xmlFile(name_.c_str());
-    rapidxml::xml_document<> doc;
+    rapidxml::file xmlFile(name_.c_str());
+    rapidxml::xml_document doc;
     doc.parse<0>(xmlFile.data());
 
-    rapidxml::xml_node<> *baseNode = doc.first_node();
+    auto *baseNode = doc.first_node();
 
     auto *scene = new Scene(renderer);
 
     if (renderer->getRendererType() == RendererType::VULKAN) {
         auto *vRenderer = dynamic_cast<VulkanRenderer *>(renderer);
+        auto state_node = baseNode->first_node("State");
+        auto camera_node = state_node->first_node("Camera");
+        auto skybox_node = state_node->first_node("Skybox");
+        auto lights_node = baseNode->first_node("Lights");
+        std::array<const char *, 6> names;
+        LightUBO lightUBOs[10];
 
         glm::vec2 size = vRenderer->GetWindowSize();
-        glm::vec3 eye = GetVector(baseNode, "e-x", "e-y", "e-z");
-        glm::vec3 center = GetVector(baseNode, "c-x", "c-y", "c-z");
-        glm::vec3 up = GetVector(baseNode, "u-x", "u-y", "u-z");
+        glm::vec3 eye = GetVector(camera_node->first_node("Eye"));
+        glm::vec3 center = GetVector(camera_node->first_node("Center"));
+        glm::vec3 up = GetVector(camera_node->first_node("Up"));
+        glm::vec3 pers = GetVector(state_node->first_node("Perspective"), "fov", "zNear", "zFar");
 
-        camera->Perspective(glm::radians(std::stof(baseNode->first_attribute("fov")->value())),
-                            size.x / size.y,
-                            std::stof(baseNode->first_attribute("zNear")->value()),
-                            std::stof(baseNode->first_attribute("zFar")->value()));
+        int index = 0;
+        for (auto node = skybox_node->first_node(); node; node = node->next_sibling()) {
+            names[index] = node->first_attribute("path")->value();
+            index++;
+        }
+
+        scene->global_lighting_ = new GlobalLighting();
+
+        index = 0;
+        for (auto node = lights_node->first_node(); node; node = node->next_sibling()) {
+            glm::vec4 pos = GetVector4(node->first_node("Position"));
+            glm::vec4 diff = GetVector4(node->first_node("Diffuse"));
+            scene->global_lighting_->lights[index] = {pos, diff};
+            index++;
+        }
+
+        scene->global_lighting_->numLights = index;
+
+        camera->Perspective(glm::radians(pers.x), size.x / size.y, pers.y, pers.z);
         camera->LookAt(eye, center, up);
         trackball->SetInitialView(eye, center, up);
 
         // Set view and projection in renderer
         vRenderer->SetViewProjection(camera->GetViewMatrix(), camera->GetProjectionMatrix(), eye);
 
-        for (rapidxml::xml_node<> *node = baseNode->first_node(); node; node = node->next_sibling()) {
-            auto *actor = new Actor(nullptr);
-
-            for (rapidxml::xml_node<> *node2 = node->first_node(); node2; node2 = node2->next_sibling()) {
-                if (std::string(node2->name()) == "ObjectComponent")
-                    actor->AddComponent<ObjectComponent>(node2->first_attribute("obj")->value(),
-                                                         node2->first_attribute("basedir")->value(), actor, vRenderer);
-                else if (std::string(node2->name()) == "TransformComponent") {
-                    rapidxml::xml_node<> *transform = node2->first_node("Position");
-                    auto position = GetVector(transform, "x", "y", "z");
-                    rapidxml::xml_node<> *orientation = node2->first_node("Orientation");
-                    glm::vec3 v_orientation = glm::vec3{
-                        glm::radians(std::stof(orientation->first_attribute("x")->value())),
-                        glm::radians(std::stof(orientation->first_attribute("y")->value())),
-                        glm::radians(std::stof(orientation->first_attribute("z")->value()))
-                    };
-                    rapidxml::xml_node<> *scale = node2->first_node("Scale");
-                    auto v_scale = GetVector(scale, "x", "y", "z");
-                    actor->AddComponent<TransformComponent, Component *, glm::vec3, glm::quat, glm::vec3>(
-                        actor, std::move(position), glm::quat(v_orientation), std::move(v_scale));
-                }
-            }
-            scene->AddActor(actor);
-        }
+        LoadActors(vRenderer, baseNode->first_node("Actors"), scene);
+        vRenderer->cubemap_ = names;
+        vRenderer->CreateSkyboxResources();
     }
 
     return scene;

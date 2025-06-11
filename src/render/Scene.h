@@ -22,8 +22,8 @@ public:
 
     void AddActor(Actor* actor);
 
+    GlobalLighting* global_lighting_ = nullptr;
 private:
     Renderer* renderer;
-    GlobalLighting* global_lighting_;
     std::vector<Component*> components_;
 };

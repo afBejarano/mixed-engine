@@ -1705,9 +1705,6 @@ void VulkanRenderer::InitializeVulkan() {
     TransitionImageLayout(depth_texture_.image, VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
-    // Create skybox resources after other resources are initialized
-    CreateSkyboxResources();
-
     CreatePostProcessingResources();
 }
 
@@ -1729,15 +1726,7 @@ void VulkanRenderer::CreateSkyboxResources() {
 
     spdlog::info("Loading skybox textures from CN_Tower directory");
 
-    // Load cubemap textures from CN_Tower skybox
-    CreateSkyboxImage({
-        "assets/skyboxes/CN_Tower/posx.jpg", // right
-        "assets/skyboxes/CN_Tower/negx.jpg", // left
-        "assets/skyboxes/CN_Tower/posy.jpg", // top
-        "assets/skyboxes/CN_Tower/negy.jpg", // bottom
-        "assets/skyboxes/CN_Tower/posz.jpg", // front
-        "assets/skyboxes/CN_Tower/negz.jpg" // back
-    });
+    CreateSkyboxImage(cubemap_);
 
     spdlog::info("Skybox resources created successfully");
 }
@@ -1994,7 +1983,7 @@ void VulkanRenderer::CreateSkyboxImage(const std::array<const char *, 6> &cubema
     }
 
     // Create descriptor pool for skybox
-    std::array<VkDescriptorPoolSize, 2> pool_sizes = {
+    std::array pool_sizes = {
         VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
         VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}
     };

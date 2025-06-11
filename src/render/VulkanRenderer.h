@@ -142,6 +142,8 @@ public:
     void ReloadPostProcessingShader(const std::string &fragment_shader_path);
     void HandleShaderSwitch(int key);
     std::unordered_map<int, std::string> shaders_ = {};
+    std::array<const char*, 6> cubemap_;
+    void CreateSkyboxResources();
 private:
     void PickPhysicalDevice();
     void CreateLogicalDeviceAndQueues();
@@ -268,7 +270,6 @@ private:
 
     Skybox skybox_{};
 
-    void CreateSkyboxResources();
     void CreateSkyboxPipeline();
     void CreateSkyboxDescriptorSetLayout();
     void CreateSkyboxImage(const std::array<const char *, 6> &cubemap_paths);
