@@ -32,7 +32,7 @@ struct oVertex {
         return VkVertexInputBindingDescription{0, sizeof(oVertex), VK_VERTEX_INPUT_RATE_VERTEX};
     }
 
-    static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions() {
+    static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions() {
         constexpr VkVertexInputAttributeDescription position_attribute_description = {
             0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(oVertex, position)
         };

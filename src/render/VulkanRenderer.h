@@ -16,12 +16,12 @@ struct oVertex;
 struct Material_UBO;
 class ObjectComponent;
 const std::vector validationLayers = {
-        "VK_LAYER_KHRONOS_validation"
-    };
+    "VK_LAYER_KHRONOS_validation"
+};
 
 const std::vector deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
 
 #ifdef NDEBUG
 constexpr bool enableValidationLayers = false;
@@ -48,6 +48,25 @@ struct SwapchainSupportCapabilities {
     }
 };
 
+struct DepthHelper {
+    bool enable_depth_testing = false;
+    bool enable_depth_writing = false;
+    VkCompareOp compare_op;
+};
+
+struct PipelineHelper {
+    std::vector<std::string> shaders;
+    std::vector<VkVertexInputBindingDescription> vertex_input_binding_description{};
+    std::vector<VkVertexInputAttributeDescription> vertex_input_attribute_description{};
+    VkCullModeFlags cull_mode{};
+    DepthHelper depth_helper{};
+    std::vector<VkPushConstantRange> push_constant_ranges{};
+    std::vector<VkDescriptorSetLayout> descriptor_set_layouts{};
+    VkPipelineLayout pipeline_layout;
+    VkPipeline pipeline;
+    VkPipelineColorBlendAttachmentState *color_blend_attachment = nullptr;
+};
+
 struct Skybox {
     VkImage image{};
     VkDeviceMemory memory{};
@@ -55,8 +74,7 @@ struct Skybox {
     VkSampler sampler{};
     VkDescriptorSet descriptor_set{};
     VkDescriptorSetLayout descriptor_set_layout{};
-    VkPipelineLayout pipeline_layout{};
-    VkPipeline pipeline{};
+    PipelineHelper pipeline;
     VkDescriptorPool descriptor_pool{};
     BufferHandle vertex_buffer{};
     BufferHandle index_buffer{};
@@ -79,8 +97,7 @@ struct PostProcessing {
     VkImage depth_image;
     VkDeviceMemory depth_memory;
     VkImageView depth_view;
-    VkPipeline pipeline;
-    VkPipelineLayout pipeline_layout;
+    PipelineHelper pipeline;
     VkDescriptorSetLayout descriptor_set_layout;
     VkDescriptorPool descriptor_pool;
     VkDescriptorSet descriptor_set;
@@ -89,29 +106,29 @@ struct PostProcessing {
 
 class VulkanRenderer : public Renderer {
 public:
-    explicit VulkanRenderer(Window* window);
+    explicit VulkanRenderer(Window *window);
     ~VulkanRenderer() override;
 
-    VulkanRenderer(const VulkanRenderer&) = delete; /// Copy constructor
-    VulkanRenderer(VulkanRenderer&&) = delete; /// Move constructor
-    VulkanRenderer& operator=(const VulkanRenderer&) = delete; /// Copy operator
-    VulkanRenderer& operator=(VulkanRenderer&&) = delete; /// Move operator
+    VulkanRenderer(const VulkanRenderer &) = delete; /// Copy constructor
+    VulkanRenderer(VulkanRenderer &&) = delete; /// Move constructor
+    VulkanRenderer &operator=(const VulkanRenderer &) = delete; /// Copy operator
+    VulkanRenderer &operator=(VulkanRenderer &&) = delete; /// Move operator
 
     bool OnCreate() override;
     void OnDestroy() override;
     void Render() override;
 
     void RenderModel(BufferHandle vertex_buffer, BufferHandle index_buffer, const std::vector<Mesh> &meshes,
-                           std::vector<TextureHandle> &textures, std::vector<Material_UBO> material_ubos,
-                           const glm::mat4 &modelMatrix);
+                     std::vector<TextureHandle> &textures, std::vector<Material_UBO> material_ubos,
+                     const glm::mat4 &modelMatrix);
 
     bool BeginFrame();
     void EndFrame();
 
     BufferHandle CreateIndexBuffer(std::vector<uint32_t> indices);
     BufferHandle CreateVertexBuffer(std::vector<oVertex> vertices);
-    BufferHandle CreateVertexBuffer(const std::vector<glm::vec3>& vertices);
-    TextureHandle CreateTexture(const char* path);
+    BufferHandle CreateVertexBuffer(const std::vector<glm::vec3> &vertices);
+    TextureHandle CreateTexture(const char *path);
     void SetViewProjection(glm::mat4 matrix, glm::mat4 projection, glm::vec3 cameraPos);
 
     void DestroyTexture(TextureHandle &handle);
@@ -122,21 +139,22 @@ public:
         return window->GetFrameBufferSize();
     }
 
-    void ReloadPostProcessingShader(const std::string& fragment_shader_path);
+    void ReloadPostProcessingShader(const std::string &fragment_shader_path);
     void HandleShaderSwitch(int key);
-
+    std::unordered_map<int, std::string> shaders_ = {};
 private:
     void PickPhysicalDevice();
     void CreateLogicalDeviceAndQueues();
     static VkSurfaceFormatKHR ChooseSwapchainSurfaceFormat(std::vector<VkSurfaceFormatKHR> formats);
     static VkPresentModeKHR ChooseSwapchainPresentMode(std::vector<VkPresentModeKHR> present_modes);
-    [[nodiscard]] VkExtent2D ChooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
-    static std::uint32_t ChooseImageCount(const VkSurfaceCapabilitiesKHR& capabilities);
+    [[nodiscard]] VkExtent2D ChooseSwapchainExtent(const VkSurfaceCapabilitiesKHR &capabilities) const;
+    static std::uint32_t ChooseImageCount(const VkSurfaceCapabilitiesKHR &capabilities);
     void CreateSwapChain();
     VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags) const;
     void CreateImageViews();
-    [[nodiscard]] VkShaderModule CreateShaderModule(const std::vector<std::uint8_t>& buffer) const;
+    [[nodiscard]] VkShaderModule CreateShaderModule(const std::vector<std::uint8_t> &buffer) const;
     void CreateGraphicsPipeline();
+    void CreatePipeline(PipelineHelper &pipeline_helper);
     [[nodiscard]] VkViewport GetViewport() const;
     [[nodiscard]] VkRect2D GetScissor() const;
     void CreateRenderPass();
@@ -153,8 +171,8 @@ private:
     void RenderIndexedBuffer(BufferHandle vertex_buffer_handle, BufferHandle index_buffer_handle,
                              std::uint32_t index_count, std::int32_t index_offset);
 
-    void SetModelMatrix(const glm::mat4& matrix) const;
-    void SetUbo(Material_UBO& material_ubos) const;
+    void SetModelMatrix(const glm::mat4 &matrix) const;
+    void SetUbo(Material_UBO &material_ubos) const;
     VkCommandBuffer BeginTransientCommandBuffer();
     void EndTransientCommandBuffer(VkCommandBuffer command_buffer);
     void CreateUniformBuffers();
@@ -166,14 +184,15 @@ private:
     void SetTexture(TextureHandle &handle);
     void TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
     void CopyBufferToImage(VkBuffer buffer, VkImage image, glm::vec2 image_size);
-    TextureHandle CreateImage(glm::vec2 image_size, VkFormat image_format, VkBufferUsageFlags usage_flags, VkMemoryPropertyFlags property_flags);
+    TextureHandle CreateImage(glm::vec2 image_size, VkFormat image_format, VkBufferUsageFlags usage_flags,
+                              VkMemoryPropertyFlags property_flags);
     void RecreateSwapchain();
     void CleanupSwapchain() const;
     [[nodiscard]] std::vector<VkPhysicalDevice> GetPhysicalDevices() const;
     void SetUpData();
     void InitializeVulkan();
     void SetupDebugMessenger();
-    static bool AreAllLayersSupported(const std::vector<const char*>& extensions);
+    static bool AreAllLayersSupported(const std::vector<const char *> &extensions);
     void CreateInstance();
     void CreateSurface();
     QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) const;
@@ -181,12 +200,12 @@ private:
     static std::vector<VkExtensionProperties> GetDeviceAvailableExtensions(VkPhysicalDevice device);
     static bool AreAllDeviceExtensionsSupported(VkPhysicalDevice device);
     bool IsDeviceSuitable(VkPhysicalDevice device) const;
-    static bool AreAllExtensionsSupported(const std::vector<const char*>& extensions);
-    [[nodiscard]] std::vector<const char*> GetRequiredInstanceExtensions() const;
+    static bool AreAllExtensionsSupported(const std::vector<const char *> &extensions);
+    [[nodiscard]] std::vector<const char *> GetRequiredInstanceExtensions() const;
     static std::vector<VkLayerProperties> GetSupportedValidationLayers();
     static std::vector<VkExtensionProperties> GetSupportedInstanceExtensions();
-    static std::vector<const char*> GetSuggestedInstanceExtensions();
-    void SetGlobalLights(GlobalLighting* global);
+    static std::vector<const char *> GetSuggestedInstanceExtensions();
+    void SetGlobalLights(GlobalLighting *global);
 
     bool validation_ = false;
 
@@ -207,9 +226,9 @@ private:
     std::vector<VkImageView> vk_swapchain_image_views_;
     std::vector<VkFramebuffer> vk_swapchain_framebuffers_;
 
-    VkPipelineLayout vk_pipeline_layout_ = VK_NULL_HANDLE;
+    PipelineHelper main_pipeline_helper_;
+
     VkRenderPass vk_render_pass_ = VK_NULL_HANDLE;
-    VkPipeline vk_pipeline_ = VK_NULL_HANDLE;
 
     VkCommandPool vk_command_pool_ = VK_NULL_HANDLE;
     VkCommandBuffer vk_command_buffer_ = VK_NULL_HANDLE;
@@ -224,7 +243,7 @@ private:
     VkDescriptorPool vk_uniform_pool_ = VK_NULL_HANDLE;
     VkDescriptorSet vk_uniform_set_ = VK_NULL_HANDLE;
     BufferHandle uniform_buffer_;
-    void* uniform_buffer_location_;
+    void *uniform_buffer_location_;
 
     VkDescriptorSetLayout vk_texture_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorPool vk_texture_pool_ = VK_NULL_HANDLE;
@@ -252,7 +271,7 @@ private:
     void CreateSkyboxResources();
     void CreateSkyboxPipeline();
     void CreateSkyboxDescriptorSetLayout();
-    void CreateSkyboxImage(const std::array<const char*, 6>& cubemap_paths);
+    void CreateSkyboxImage(const std::array<const char *, 6> &cubemap_paths);
     void RenderSkybox();
     std::vector<glm::vec3> CreateSkyboxVertices();
     std::vector<uint32_t> CreateSkyboxIndices();
@@ -266,6 +285,6 @@ private:
     void CreatePostProcessingFramebuffer();
     void CreatePostProcessingDescriptorSet();
     void DestroyPostProcessingResources();
-    
+
     PostProcessing post_processing_{};
 };

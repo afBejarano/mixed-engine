@@ -26,42 +26,14 @@ SceneManager::~SceneManager() {
 void SceneManager::Run() {
     while (!glfwWindowShouldClose(window->getGLFWwindow())) {
         glfwPollEvents();
-        
-        // Handle shader switching
-        if (renderType == RendererType::VULKAN) {
-            VulkanRenderer* vRenderer = dynamic_cast<VulkanRenderer*>(renderer);
-            
-            // Check for number keys
-            if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_1) == GLFW_PRESS) {
-                vRenderer->HandleShaderSwitch(GLFW_KEY_1);
-            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_2) == GLFW_PRESS) {
-                vRenderer->HandleShaderSwitch(GLFW_KEY_2);
-            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_3) == GLFW_PRESS) {
-                vRenderer->HandleShaderSwitch(GLFW_KEY_3);
-            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_4) == GLFW_PRESS) {
-                vRenderer->HandleShaderSwitch(GLFW_KEY_4);
-            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_5) == GLFW_PRESS) {
-                vRenderer->HandleShaderSwitch(GLFW_KEY_5);
-            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_6) == GLFW_PRESS) {
-                vRenderer->HandleShaderSwitch(GLFW_KEY_6);
-            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_7) == GLFW_PRESS) {
-                vRenderer->HandleShaderSwitch(GLFW_KEY_7);
-            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_8) == GLFW_PRESS) {
-                vRenderer->HandleShaderSwitch(GLFW_KEY_8);
-            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_9) == GLFW_PRESS) {
-                vRenderer->HandleShaderSwitch(GLFW_KEY_9);
-            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_0) == GLFW_PRESS) {
-                vRenderer->HandleShaderSwitch(GLFW_KEY_0);
-            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_P) == GLFW_PRESS) {
-                vRenderer->HandleShaderSwitch(GLFW_KEY_P);
-            }
-        }
-        
         if (trackball) {
-            trackball->HandleEvents();  // Handle trackball events
+            trackball->HandleEvents(); // Handle trackball events
         }
         if (renderType == RendererType::VULKAN) {
             VulkanRenderer *vRenderer = dynamic_cast<VulkanRenderer *>(renderer);
+            for (auto key: vRenderer->shaders_)
+                if (glfwGetKey(window->getGLFWwindow(), key.first) == GLFW_PRESS)
+                    vRenderer->HandleShaderSwitch(key.first);
             if (vRenderer->BeginFrame()) {
                 currentScene->Render();
                 vRenderer->EndFrame();
@@ -73,8 +45,25 @@ void SceneManager::Run() {
 bool SceneManager::Initialize(const std::string &name_, const int width_, const int height_) {
     window = new Window(name_.c_str(), width_, height_, false);
     renderer = new VulkanRenderer(window);
-    camera = new Camera();  // Create camera
-    trackball = new Trackball(window->getGLFWwindow(), camera, dynamic_cast<VulkanRenderer*>(renderer));  // Create trackball with renderer
+    if (renderType == RendererType::VULKAN) {
+        VulkanRenderer *vRenderer = dynamic_cast<VulkanRenderer *>(renderer);
+        vRenderer->shaders_ = {
+            {GLFW_KEY_1, "shaders/nopost.frag.spv"},
+            {GLFW_KEY_2, "shaders/grayscale.frag.spv"},
+            {GLFW_KEY_3, "shaders/colorReduction.frag.spv"},
+            {GLFW_KEY_4, "shaders/scanlines.frag.spv"},
+            {GLFW_KEY_5, "shaders/pixelation.frag.spv"},
+            {GLFW_KEY_6, "shaders/retro.frag.spv"},
+            {GLFW_KEY_7, "shaders/crt.frag.spv"},
+            {GLFW_KEY_8, "shaders/chromab.frag.spv"},
+            {GLFW_KEY_9, "shaders/vignette.frag.spv"},
+            {GLFW_KEY_0, "shaders/brightness.frag.spv"},
+            {GLFW_KEY_P, "shaders/bloom.frag.spv"},
+        };
+    }
+    camera = new Camera(); // Create camera
+    trackball = new Trackball(window->getGLFWwindow(), camera, dynamic_cast<VulkanRenderer *>(renderer));
+    // Create trackball with renderer
     currentScene = LoadScene("./assets/scenes/Scene1.xml");
 
     return true;
@@ -85,6 +74,15 @@ void SceneManager::GetEvents() {}
 void SceneManager::ChangeScene(SCENE_NUMBER scene_) {}
 
 void SceneManager::BuildScene(SCENE_NUMBER scene_) {}
+
+glm::vec3 GetVector(rapidxml::xml_node<> *node, const std::string &namex, const std::string &namey,
+                    const std::string &namez) {
+    return {
+        std::stof(node->first_attribute(namex.c_str())->value()),
+        std::stof(node->first_attribute(namey.c_str())->value()),
+        std::stof(node->first_attribute(namez.c_str())->value())
+    };
+}
 
 Scene *SceneManager::LoadScene(const std::string &name_) {
     rapidxml::file<> xmlFile(name_.c_str());
@@ -99,27 +97,14 @@ Scene *SceneManager::LoadScene(const std::string &name_) {
         auto *vRenderer = dynamic_cast<VulkanRenderer *>(renderer);
 
         glm::vec2 size = vRenderer->GetWindowSize();
-        glm::vec3 eye = glm::vec3{
-            std::stof(baseNode->first_attribute("e-x")->value()),
-            std::stof(baseNode->first_attribute("e-y")->value()),
-            std::stof(baseNode->first_attribute("e-z")->value())
-        };
-        glm::vec3 center = glm::vec3{
-            std::stof(baseNode->first_attribute("c-x")->value()),
-            std::stof(baseNode->first_attribute("c-y")->value()),
-            std::stof(baseNode->first_attribute("c-z")->value())
-        };
-        glm::vec3 up = glm::vec3{
-            std::stof(baseNode->first_attribute("u-x")->value()),
-            std::stof(baseNode->first_attribute("u-y")->value()),
-            std::stof(baseNode->first_attribute("u-z")->value())
-        };
+        glm::vec3 eye = GetVector(baseNode, "e-x", "e-y", "e-z");
+        glm::vec3 center = GetVector(baseNode, "c-x", "c-y", "c-z");
+        glm::vec3 up = GetVector(baseNode, "u-x", "u-y", "u-z");
 
-        // Set up camera and trackball with initial view
         camera->Perspective(glm::radians(std::stof(baseNode->first_attribute("fov")->value())),
-                          size.x / size.y,
-                          std::stof(baseNode->first_attribute("zNear")->value()),
-                          std::stof(baseNode->first_attribute("zFar")->value()));
+                            size.x / size.y,
+                            std::stof(baseNode->first_attribute("zNear")->value()),
+                            std::stof(baseNode->first_attribute("zFar")->value()));
         camera->LookAt(eye, center, up);
         trackball->SetInitialView(eye, center, up);
 
@@ -135,11 +120,7 @@ Scene *SceneManager::LoadScene(const std::string &name_) {
                                                          node2->first_attribute("basedir")->value(), actor, vRenderer);
                 else if (std::string(node2->name()) == "TransformComponent") {
                     rapidxml::xml_node<> *transform = node2->first_node("Position");
-                    glm::vec3 position = glm::vec3{
-                        std::stof(transform->first_attribute("x")->value()),
-                        std::stof(transform->first_attribute("y")->value()),
-                        std::stof(transform->first_attribute("z")->value())
-                    };
+                    auto position = GetVector(transform, "x", "y", "z");
                     rapidxml::xml_node<> *orientation = node2->first_node("Orientation");
                     glm::vec3 v_orientation = glm::vec3{
                         glm::radians(std::stof(orientation->first_attribute("x")->value())),
@@ -147,11 +128,7 @@ Scene *SceneManager::LoadScene(const std::string &name_) {
                         glm::radians(std::stof(orientation->first_attribute("z")->value()))
                     };
                     rapidxml::xml_node<> *scale = node2->first_node("Scale");
-                    auto v_scale = glm::vec3{
-                        std::stof(scale->first_attribute("x")->value()),
-                        std::stof(scale->first_attribute("y")->value()),
-                        std::stof(scale->first_attribute("z")->value())
-                    };
+                    auto v_scale = GetVector(scale, "x", "y", "z");
                     actor->AddComponent<TransformComponent, Component *, glm::vec3, glm::quat, glm::vec3>(
                         actor, std::move(position), glm::quat(v_orientation), std::move(v_scale));
                 }
