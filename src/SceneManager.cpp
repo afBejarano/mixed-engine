@@ -31,7 +31,7 @@ void SceneManager::Run() {
         if (renderType == RendererType::VULKAN) {
             VulkanRenderer* vRenderer = dynamic_cast<VulkanRenderer*>(renderer);
             
-            // Check for number keys 1-4
+            // Check for number keys
             if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_1) == GLFW_PRESS) {
                 vRenderer->HandleShaderSwitch(GLFW_KEY_1);
             } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_2) == GLFW_PRESS) {
@@ -40,6 +40,20 @@ void SceneManager::Run() {
                 vRenderer->HandleShaderSwitch(GLFW_KEY_3);
             } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_4) == GLFW_PRESS) {
                 vRenderer->HandleShaderSwitch(GLFW_KEY_4);
+            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_5) == GLFW_PRESS) {
+                vRenderer->HandleShaderSwitch(GLFW_KEY_5);
+            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_6) == GLFW_PRESS) {
+                vRenderer->HandleShaderSwitch(GLFW_KEY_6);
+            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_7) == GLFW_PRESS) {
+                vRenderer->HandleShaderSwitch(GLFW_KEY_7);
+            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_8) == GLFW_PRESS) {
+                vRenderer->HandleShaderSwitch(GLFW_KEY_8);
+            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_9) == GLFW_PRESS) {
+                vRenderer->HandleShaderSwitch(GLFW_KEY_9);
+            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_0) == GLFW_PRESS) {
+                vRenderer->HandleShaderSwitch(GLFW_KEY_0);
+            } else if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_P) == GLFW_PRESS) {
+                vRenderer->HandleShaderSwitch(GLFW_KEY_P);
             }
         }
         
