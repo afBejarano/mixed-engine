@@ -8,9 +8,8 @@ bool streq(const char* a, const char* b) {
     return std::strcmp(a, b) == 0;
 }
 
-std::vector<std::uint8_t> ReadFile(std::filesystem::path shader_path) {
-    if (!std::filesystem::exists(shader_path)) return {};
-    if (!std::filesystem::is_regular_file(shader_path)) return {};
+std::vector<std::uint8_t> ReadFile(const std::filesystem::path& shader_path) {
+    if (!exists(shader_path) || !is_regular_file(shader_path) ) return {};
 
     std::ifstream file(shader_path, std::ios::binary);
     if (!file.is_open()) return {};

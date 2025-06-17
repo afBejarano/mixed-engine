@@ -11,16 +11,19 @@
 #include <render/Renderer.h>
 #include <window/Window.h>
 
-struct Mesh;
 struct oVertex;
 struct Material_UBO;
+struct Mesh;
 class ObjectComponent;
 const std::vector validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
 const std::vector deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+#ifdef __APPLE__
+    "VK_KHR_portability_subset"
+#endif
 };
 
 #ifdef NDEBUG
@@ -89,24 +92,30 @@ struct Skybox {
 };
 
 struct PostProcessing {
-    VkRenderPass render_pass;
-    VkFramebuffer framebuffer;
-    VkImage color_image;
-    VkDeviceMemory color_memory;
-    VkImageView color_view;
-    VkImage depth_image;
-    VkDeviceMemory depth_memory;
-    VkImageView depth_view;
+    VkRenderPass render_pass = VK_NULL_HANDLE;
+    VkFramebuffer framebuffer = VK_NULL_HANDLE;
+    VkImageView color_view = VK_NULL_HANDLE;
+    VkImageView depth_view = VK_NULL_HANDLE;
+    TextureHandle depth_handle{};
+    TextureHandle color_handle{};
     PipelineHelper pipeline;
-    VkDescriptorSetLayout descriptor_set_layout;
-    VkDescriptorPool descriptor_pool;
-    VkDescriptorSet descriptor_set;
-    VkSampler sampler;
+    VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
+    VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
+    VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
+    VkSampler sampler = VK_NULL_HANDLE;
+};
+
+struct FrameResources {
+    VkSemaphore imageAvailableSemaphore;
+    VkSemaphore renderFinishedSemaphore;
+    VkFence inFlightFence;
+    VkCommandBuffer commandBuffer;
 };
 
 class VulkanRenderer : public Renderer {
 public:
     explicit VulkanRenderer(Window *window);
+
     ~VulkanRenderer() override;
 
     VulkanRenderer(const VulkanRenderer &) = delete; /// Copy constructor
@@ -115,99 +124,168 @@ public:
     VulkanRenderer &operator=(VulkanRenderer &&) = delete; /// Move operator
 
     bool OnCreate() override;
+
     void OnDestroy() override;
+
     void Render() override;
 
     void RenderModel(BufferHandle vertex_buffer, BufferHandle index_buffer, const std::vector<Mesh> &meshes,
-                     std::vector<TextureHandle> &textures, std::vector<Material_UBO> material_ubos,
+                     const std::vector<TextureHandle> &textures, std::vector<Material_UBO> material_ubos,
                      const glm::mat4 &modelMatrix);
 
     bool BeginFrame();
+
     void EndFrame();
 
-    BufferHandle CreateIndexBuffer(std::vector<uint32_t> indices);
-    BufferHandle CreateVertexBuffer(std::vector<oVertex> vertices);
-    BufferHandle CreateVertexBuffer(const std::vector<glm::vec3> &vertices);
+    BufferHandle CreateIndexBuffer(const std::vector<uint32_t> &indices) const;
+
+    template<typename T>
+    BufferHandle CreateVertexBuffer(std::vector<T> vertices);
+
     TextureHandle CreateTexture(const char *path);
-    void SetViewProjection(glm::mat4 matrix, glm::mat4 projection, glm::vec3 cameraPos);
 
-    void DestroyTexture(TextureHandle &handle);
+    void SetViewProjection(const glm::mat4 &matrix, const glm::mat4 &projection, glm::vec3 cameraPos) const;
+
+    template<typename T>
+    static void SetUBO(void *location, T *ubo);
+
+    void DestroyTexture(TextureHandle &handle) const;
+
     void DestroyBuffer(BufferHandle buffer_handle) const;
-    void SetLightsUBO(GlobalLighting *global_lighting);
 
-    glm::ivec2 GetWindowSize() {
-        return window->GetFrameBufferSize();
-    }
+    [[nodiscard]] glm::ivec2 GetWindowSize() const { return window->GetFrameBufferSize(); }
 
     void ReloadPostProcessingShader(const std::string &fragment_shader_path);
+
     void HandleShaderSwitch(int key);
+
     std::unordered_map<int, std::string> shaders_ = {};
-    std::array<const char*, 6> cubemap_;
+    std::array<const char *, 6> cubemap_;
+
     void CreateSkyboxResources();
+
+    void *uniform_buffer_location_;
+    void *global_lights_buffer_location_ = nullptr;
+
 private:
+    VkSemaphore image_available_semaphore_;
+    VkSemaphore render_finished_semaphore_;
+    VkFence in_flight_fence_;
+    VkCommandBuffer command_buffer_;
+
     void PickPhysicalDevice();
+
     void CreateLogicalDeviceAndQueues();
+
     static VkSurfaceFormatKHR ChooseSwapchainSurfaceFormat(std::vector<VkSurfaceFormatKHR> formats);
+
     static VkPresentModeKHR ChooseSwapchainPresentMode(std::vector<VkPresentModeKHR> present_modes);
+
     [[nodiscard]] VkExtent2D ChooseSwapchainExtent(const VkSurfaceCapabilitiesKHR &capabilities) const;
+
     static std::uint32_t ChooseImageCount(const VkSurfaceCapabilitiesKHR &capabilities);
+
     void CreateSwapChain();
+
     VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags) const;
+
     void CreateImageViews();
+
     [[nodiscard]] VkShaderModule CreateShaderModule(const std::vector<std::uint8_t> &buffer) const;
+
     void CreateGraphicsPipeline();
-    void CreatePipeline(PipelineHelper &pipeline_helper);
+
+    void CreatePipeline(PipelineHelper &pipeline_helper) const;
+
     [[nodiscard]] VkViewport GetViewport() const;
+
     [[nodiscard]] VkRect2D GetScissor() const;
+
+    void CreateRenderPass(VkImageLayout layout, VkRenderPass *render_pass) const;
+
     void CreateRenderPass();
+
     void CreateFramebuffers();
+
     void CreateCommandPool();
-    void CreateCommandBuffer();
+
     void BeginCommands();
-    void BeginCommands() const;
+
     void EndCommands() const;
+
     void CreateSignals();
+
     [[nodiscard]] std::uint32_t FindMemoryType(std::uint32_t memory_type_bits, VkMemoryPropertyFlags properties) const;
-    BufferHandle CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
-    void RenderBuffer(BufferHandle buffer_handle, std::uint32_t vertex_count);
-    void RenderIndexedBuffer(BufferHandle vertex_buffer_handle, BufferHandle index_buffer_handle,
-                             std::uint32_t index_count, std::int32_t index_offset);
+
+    BufferHandle CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) const;
 
     void SetModelMatrix(const glm::mat4 &matrix) const;
-    void SetUbo(Material_UBO &material_ubos) const;
-    VkCommandBuffer BeginTransientCommandBuffer();
-    void EndTransientCommandBuffer(VkCommandBuffer command_buffer);
+
+    VkCommandBuffer BeginTransientCommandBuffer() const;
+
+    void EndTransientCommandBuffer(VkCommandBuffer command_buffer) const;
+
     void CreateUniformBuffers();
+
+    void CreateDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding> &bindings,
+                                   VkDescriptorSetLayout *layout) const;
+
     void CreateDescriptorSetLayouts();
+
     void CreateDescriptorPools();
+
+    void AllocateDescriptorSet(const VkDescriptorSetAllocateInfo &alloc_info, VkDescriptorSet *layout) const;
+
     void CreateDescriptorSets();
+
     void CreateTextureSampler();
+
     void CreateDepthResources();
-    void SetTexture(TextureHandle &handle);
-    void TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
-    void CopyBufferToImage(VkBuffer buffer, VkImage image, glm::vec2 image_size);
+
+    void SetTexture(const TextureHandle &handle) const;
+
+    void TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout) const;
+
+    void CopyBufferToImage(VkBuffer buffer, VkImage image, glm::vec2 image_size) const;
+
     TextureHandle CreateImage(glm::vec2 image_size, VkFormat image_format, VkBufferUsageFlags usage_flags,
-                              VkMemoryPropertyFlags property_flags);
+                              VkMemoryPropertyFlags property_flags) const;
+
     void RecreateSwapchain();
+
     void CleanupSwapchain() const;
+
     [[nodiscard]] std::vector<VkPhysicalDevice> GetPhysicalDevices() const;
-    void SetUpData();
+
     void InitializeVulkan();
+
     void SetupDebugMessenger();
+
     static bool AreAllLayersSupported(const std::vector<const char *> &extensions);
+
     void CreateInstance();
+
     void CreateSurface();
+
     QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) const;
+
     SwapchainSupportCapabilities FindSwapChainSupport(VkPhysicalDevice device) const;
+
     static std::vector<VkExtensionProperties> GetDeviceAvailableExtensions(VkPhysicalDevice device);
+
     static bool AreAllDeviceExtensionsSupported(VkPhysicalDevice device);
+
     bool IsDeviceSuitable(VkPhysicalDevice device) const;
+
     static bool AreAllExtensionsSupported(const std::vector<const char *> &extensions);
+
     [[nodiscard]] std::vector<const char *> GetRequiredInstanceExtensions() const;
+
     static std::vector<VkLayerProperties> GetSupportedValidationLayers();
+
     static std::vector<VkExtensionProperties> GetSupportedInstanceExtensions();
+
     static std::vector<const char *> GetSuggestedInstanceExtensions();
-    void SetGlobalLights(GlobalLighting *global);
 
     bool validation_ = false;
 
@@ -233,10 +311,7 @@ private:
     VkRenderPass vk_render_pass_ = VK_NULL_HANDLE;
 
     VkCommandPool vk_command_pool_ = VK_NULL_HANDLE;
-    VkCommandBuffer vk_command_buffer_ = VK_NULL_HANDLE;
 
-    VkSemaphore vk_image_available_signal_ = VK_NULL_HANDLE;
-    VkSemaphore vk_render_finished_signal_ = VK_NULL_HANDLE;
     VkFence vk_still_rendering_fence_ = VK_NULL_HANDLE;
 
     std::uint32_t current_image_index_ = 0;
@@ -245,7 +320,6 @@ private:
     VkDescriptorPool vk_uniform_pool_ = VK_NULL_HANDLE;
     VkDescriptorSet vk_uniform_set_ = VK_NULL_HANDLE;
     BufferHandle uniform_buffer_;
-    void *uniform_buffer_location_;
 
     VkDescriptorSetLayout vk_texture_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorPool vk_texture_pool_ = VK_NULL_HANDLE;
@@ -266,26 +340,32 @@ private:
     VkDescriptorSetLayout vk_lights_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorSet vk_lights_set_ = VK_NULL_HANDLE;
     BufferHandle g_light_handle_;
-    void *global_lights_buffer_location_ = nullptr;
 
     Skybox skybox_{};
 
     void CreateSkyboxPipeline();
-    void CreateSkyboxDescriptorSetLayout();
-    void CreateSkyboxImage(const std::array<const char *, 6> &cubemap_paths);
-    void RenderSkybox();
-    std::vector<glm::vec3> CreateSkyboxVertices();
-    std::vector<uint32_t> CreateSkyboxIndices();
 
-    VkFormat FindDepthFormat() const;
-    bool HasStencilComponent(VkFormat format) const;
+    void CreateSkyboxDescriptorSetLayout();
+
+    void CreateSkyboxImage(const std::array<const char *, 6> &cubemap_paths);
+
+    void RenderSkybox() const;
+
+    [[nodiscard]] VkFormat FindDepthFormat() const;
+
+    [[nodiscard]] static bool HasStencilComponent(VkFormat format);
 
     void CreatePostProcessingResources();
+
     void CreatePostProcessingPipeline();
+
     void CreatePostProcessingRenderPass();
+
     void CreatePostProcessingFramebuffer();
+
     void CreatePostProcessingDescriptorSet();
-    void DestroyPostProcessingResources();
+
+    void DestroyPostProcessingResources() const;
 
     PostProcessing post_processing_{};
 };

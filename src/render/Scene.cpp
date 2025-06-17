@@ -35,8 +35,8 @@ void Scene::OnDestroy() {
 
 void Scene::Render() {
     if (renderer->getRendererType() == RendererType::VULKAN) {
-        VulkanRenderer *vRenderer = dynamic_cast<VulkanRenderer *>(renderer);
-        vRenderer->SetLightsUBO(global_lighting_);
+        auto *vRenderer = dynamic_cast<VulkanRenderer *>(renderer);
+        VulkanRenderer::SetUBO<GlobalLighting>(vRenderer->global_lights_buffer_location_, global_lighting_);
     }
     for (Component *component: components_) {
         component->Render();
