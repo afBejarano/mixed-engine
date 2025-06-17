@@ -7,7 +7,6 @@
 #include <BufferHandle.h>
 #include <GlobalLight.h>
 #include <TextureHandle.h>
-#include <Vertex.h>
 #include <render/Renderer.h>
 #include <window/Window.h>
 
@@ -58,16 +57,16 @@ struct DepthHelper {
 };
 
 struct PipelineHelper {
-    std::vector<std::string> shaders;
+    std::vector<std::string> shaders{};
     std::vector<VkVertexInputBindingDescription> vertex_input_binding_description{};
     std::vector<VkVertexInputAttributeDescription> vertex_input_attribute_description{};
     VkCullModeFlags cull_mode{};
     DepthHelper depth_helper{};
     std::vector<VkPushConstantRange> push_constant_ranges{};
     std::vector<VkDescriptorSetLayout> descriptor_set_layouts{};
-    VkPipelineLayout pipeline_layout;
-    VkPipeline pipeline;
-    VkPipelineColorBlendAttachmentState *color_blend_attachment = nullptr;
+    VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
+    VkPipeline pipeline = VK_NULL_HANDLE;
+    VkPipelineColorBlendAttachmentState *color_blend_attachment = VK_NULL_HANDLE;
 };
 
 struct Skybox {
@@ -106,10 +105,10 @@ struct PostProcessing {
 };
 
 struct FrameResources {
-    VkSemaphore imageAvailableSemaphore;
-    VkSemaphore renderFinishedSemaphore;
-    VkFence inFlightFence;
-    VkCommandBuffer commandBuffer;
+    VkSemaphore imageAvailableSemaphore = VK_NULL_HANDLE;
+    VkSemaphore renderFinishedSemaphore = VK_NULL_HANDLE;
+    VkFence inFlightFence = VK_NULL_HANDLE;
+    VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
 };
 
 class VulkanRenderer : public Renderer {
@@ -137,7 +136,7 @@ public:
 
     void EndFrame();
 
-    BufferHandle CreateIndexBuffer(const std::vector<uint32_t> &indices) const;
+    [[nodiscard]] BufferHandle CreateIndexBuffer(const std::vector<uint32_t> &indices) const;
 
     template<typename T>
     BufferHandle CreateVertexBuffer(std::vector<T> vertices);
@@ -160,18 +159,18 @@ public:
     void HandleShaderSwitch(int key);
 
     std::unordered_map<int, std::string> shaders_ = {};
-    std::array<const char *, 6> cubemap_;
+    std::array<const char *, 6> cubemap_{};
 
     void CreateSkyboxResources();
 
-    void *uniform_buffer_location_;
-    void *global_lights_buffer_location_ = nullptr;
+    void *uniform_buffer_location_ = VK_NULL_HANDLE;
+    void *global_lights_buffer_location_ = VK_NULL_HANDLE;
 
 private:
-    VkSemaphore image_available_semaphore_;
-    VkSemaphore render_finished_semaphore_;
-    VkFence in_flight_fence_;
-    VkCommandBuffer command_buffer_;
+    VkSemaphore image_available_semaphore_ = VK_NULL_HANDLE;
+    VkSemaphore render_finished_semaphore_= VK_NULL_HANDLE;
+    VkFence in_flight_fence_= VK_NULL_HANDLE;
+    VkCommandBuffer command_buffer_= VK_NULL_HANDLE;
 
     void PickPhysicalDevice();
 
@@ -209,7 +208,7 @@ private:
 
     void CreateCommandPool();
 
-    void BeginCommands();
+    void BeginCommands() const;
 
     void EndCommands() const;
 
@@ -217,11 +216,11 @@ private:
 
     [[nodiscard]] std::uint32_t FindMemoryType(std::uint32_t memory_type_bits, VkMemoryPropertyFlags properties) const;
 
-    BufferHandle CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) const;
+    [[nodiscard]] BufferHandle CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) const;
 
     void SetModelMatrix(const glm::mat4 &matrix) const;
 
-    VkCommandBuffer BeginTransientCommandBuffer() const;
+    [[nodiscard]] VkCommandBuffer BeginTransientCommandBuffer() const;
 
     void EndTransientCommandBuffer(VkCommandBuffer command_buffer) const;
 
@@ -248,7 +247,7 @@ private:
 
     void CopyBufferToImage(VkBuffer buffer, VkImage image, glm::vec2 image_size) const;
 
-    TextureHandle CreateImage(glm::vec2 image_size, VkFormat image_format, VkBufferUsageFlags usage_flags,
+    [[nodiscard]] TextureHandle CreateImage(glm::vec2 image_size, VkFormat image_format, VkBufferUsageFlags usage_flags,
                               VkMemoryPropertyFlags property_flags) const;
 
     void RecreateSwapchain();
@@ -302,11 +301,11 @@ private:
     VkSurfaceFormatKHR vk_surface_format_{};
     VkPresentModeKHR vk_present_mode_{};
     VkExtent2D vk_extent_{};
-    std::vector<VkImage> vk_swapchain_images_;
-    std::vector<VkImageView> vk_swapchain_image_views_;
-    std::vector<VkFramebuffer> vk_swapchain_framebuffers_;
+    std::vector<VkImage> vk_swapchain_images_{};
+    std::vector<VkImageView> vk_swapchain_image_views_{};
+    std::vector<VkFramebuffer> vk_swapchain_framebuffers_{};
 
-    PipelineHelper main_pipeline_helper_;
+    PipelineHelper main_pipeline_helper_{};
 
     VkRenderPass vk_render_pass_ = VK_NULL_HANDLE;
 
@@ -319,27 +318,21 @@ private:
     VkDescriptorSetLayout vk_uniform_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorPool vk_uniform_pool_ = VK_NULL_HANDLE;
     VkDescriptorSet vk_uniform_set_ = VK_NULL_HANDLE;
-    BufferHandle uniform_buffer_;
+    BufferHandle uniform_buffer_{};
 
     VkDescriptorSetLayout vk_texture_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorPool vk_texture_pool_ = VK_NULL_HANDLE;
     VkSampler vk_texture_sampler_ = VK_NULL_HANDLE;
-    TextureHandle depth_texture_;
+    TextureHandle depth_texture_{};
 
     VkDescriptorSetLayout vk_uniform_bp_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorSet vk_bp_set_ = VK_NULL_HANDLE;
-    BufferHandle bp_buffer_handle_;
-    void *bp_buffer_location_;
-
-    std::vector<Vertex> vertices = {
-        Vertex{glm::vec3{0.0f, -0.5f, 0.0f}, glm::vec3{1.0f, 0.0f, 0.0f}},
-        Vertex{glm::vec3{0.5f, 0.5f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f}},
-        Vertex{glm::vec3{-0.5f, 0.5f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}}
-    };
+    BufferHandle bp_buffer_handle_{};
+    void *bp_buffer_location_ = VK_NULL_HANDLE;
 
     VkDescriptorSetLayout vk_lights_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorSet vk_lights_set_ = VK_NULL_HANDLE;
-    BufferHandle g_light_handle_;
+    BufferHandle g_light_handle_{};
 
     Skybox skybox_{};
 

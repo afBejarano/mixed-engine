@@ -66,7 +66,7 @@ bool SceneManager::Initialize(const std::string &name_, const int width_, const 
     camera = new Camera(); // Create camera
     trackball = new Trackball(window->getGLFWwindow(), camera, dynamic_cast<VulkanRenderer *>(renderer));
     // Create trackball with renderer
-    currentScene = LoadScene("./assets/scenes/Scene2.xml");
+    currentScene = LoadScene("./assets/scenes/Scene4.xml");
 
     return true;
 }

@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Scene>
+    <State>
+        <Camera>
+            <Eye x="0.0" y="15.0" z="-30.0"/>
+            <Center x="0.0" y="0.0" z="0.0"/>
+            <Up x="0.0" y="1.0" z="0.0"/>
+        </Camera>
+        <Perspective fov="75.0" zNear="0.1" zFar="200"/>
+        <Skybox>
+            <Right path="assets/skyboxes/Stars/StarSkyboxPosx.png"/>
+            <Left path="assets/skyboxes/Stars/StarSkyboxNegx.png"/>
+            <Top path="assets/skyboxes/Stars/StarSkyboxPosy.png"/>
+            <Bottom path="assets/skyboxes/Stars/StarSkyboxNegY.png"/>
+            <Front path="assets/skyboxes/Stars/StarSkyboxPosz.png"/>
+            <Back path="assets/skyboxes/Stars/StarSkyboxnegz.png"/>
+        </Skybox>
+    </State>
+    <Actors>
+        <!-- City Layout -->
+        <!-- Center Buildings -->
+        <Actor>
+            <ObjectComponent obj="./assets/models/house-luxurious.obj"
+                             basedir="./assets/models/"/>
+            <TransformComponent>
+                <Position x="0.0" y="0.0" z="0.0"/>
+                <Orientation x="0.0" y="0.0" z="0.0"/>
+                <Scale x="2.0" y="2.0" z="2.0"/>
+            </TransformComponent>
+        </Actor>
+        
+        <!-- Surrounding Buildings -->
+        <Actor>
+            <ObjectComponent obj="./assets/models/house-modern.obj"
+                             basedir="./assets/models/"/>
+            <TransformComponent>
+                <Position x="-15.0" y="0.0" z="-10.0"/>
+                <Orientation x="0.0" y="45.0" z="0.0"/>
+                <Scale x="1.5" y="1.5" z="1.5"/>
+            </TransformComponent>
+        </Actor>
+        
+        <Actor>
+            <ObjectComponent obj="./assets/models/house-modern.obj"
+                             basedir="./assets/models/"/>
+            <TransformComponent>
+                <Position x="15.0" y="0.0" z="-10.0"/>
+                <Orientation x="0.0" y="-45.0" z="0.0"/>
+                <Scale x="1.5" y="1.5" z="1.5"/>
+            </TransformComponent>
+        </Actor>
+        
+        <!-- Gas Station -->
+        <Actor>
+            <ObjectComponent obj="./assets/models/gas-station.obj"
+                             basedir="./assets/models/"/>
+            <TransformComponent>
+                <Position x="-20.0" y="0.0" z="15.0"/>
+                <Orientation x="0.0" y="90.0" z="0.0"/>
+                <Scale x="1.0" y="1.0" z="1.0"/>
+            </TransformComponent>
+        </Actor>
+        
+        <!-- Small Houses -->
+        <Actor>
+            <ObjectComponent obj="./assets/models/house-small.obj"
+                             basedir="./assets/models/"/>
+            <TransformComponent>
+                <Position x="20.0" y="0.0" z="15.0"/>
+                <Orientation x="0.0" y="-90.0" z="0.0"/>
+                <Scale x="1.0" y="1.0" z="1.0"/>
+            </TransformComponent>
+        </Actor>
+        
+        <!-- Sci-fi Elements -->
+        <!-- Main Spaceship -->
+        <Actor>
+            <ObjectComponent obj="./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+                             basedir="./assets/Spaceship/"/>
+            <TransformComponent>
+                <Position x="0.0" y="20.0" z="0.0"/>
+                <Orientation x="0.0" y="45.0" z="0.0"/>
+                <Scale x="2.0" y="2.0" z="2.0"/>
+            </TransformComponent>
+        </Actor>
+        
+        <!-- Spider on the gas station -->
+        <Actor>
+            <ObjectComponent obj="./assets/Spider/spider.obj"
+                             basedir="./assets/Spider/"/>
+            <TransformComponent>
+                <Position x="-20.0" y="5.0" z="15.0"/>
+                <Orientation x="0.0" y="45.0" z="0.0"/>
+                <Scale x="0.05" y="0.05" z="0.05"/>
+            </TransformComponent>
+        </Actor>
+        
+        <!-- Skull on the luxurious house -->
+        <Actor>
+            <ObjectComponent obj="./assets/Skull/12140_Skull_v3_L2.obj"
+                             basedir="./assets/Skull/"/>
+            <TransformComponent>
+                <Position x="0.0" y="10.0" z="0.0"/>
+                <Orientation x="0.0" y="0.0" z="0.0"/>
+                <Scale x="0.2" y="0.2" z="0.2"/>
+            </TransformComponent>
+        </Actor>
+        
+        <!-- Additional Spaceships -->
+        <Actor>
+            <ObjectComponent obj="./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+                             basedir="./assets/Spaceship/"/>
+            <TransformComponent>
+                <Position x="-25.0" y="15.0" z="-20.0"/>
+                <Orientation x="0.0" y="180.0" z="0.0"/>
+                <Scale x="1.0" y="1.0" z="1.0"/>
+            </TransformComponent>
+        </Actor>
+        
+        <Actor>
+            <ObjectComponent obj="./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+                             basedir="./assets/Spaceship/"/>
+            <TransformComponent>
+                <Position x="25.0" y="15.0" z="-20.0"/>
+                <Orientation x="0.0" y="0.0" z="0.0"/>
+                <Scale x="1.0" y="1.0" z="1.0"/>
+            </TransformComponent>
+        </Actor>
+    </Actors>
+    <Lights>
+        <!-- Main light (white) -->
+        <Light>
+            <Position x="0.0" y="30.0" z="0.0" w="1.0"/>
+            <Diffuse x="1.0" y="1.0" z="1.0" w="1.0"/>
+        </Light>
+        
+        <!-- Red accent light -->
+        <Light>
+            <Position x="-20.0" y="10.0" z="15.0" w="1.0"/>
+            <Diffuse x="1.0" y="0.2" z="0.2" w="1.0"/>
+        </Light>
+        
+        <!-- Blue accent light -->
+        <Light>
+            <Position x="20.0" y="10.0" z="15.0" w="1.0"/>
+            <Diffuse x="0.2" y="0.2" z="1.0" w="1.0"/>
+        </Light>
+        
+        <!-- Green accent light -->
+        <Light>
+            <Position x="0.0" y="10.0" z="30.0" w="1.0"/>
+            <Diffuse x="0.2" y="1.0" z="0.2" w="1.0"/>
+        </Light>
+        
+        <!-- Purple accent light -->
+        <Light>
+            <Position x="0.0" y="20.0" z="-30.0" w="1.0"/>
+            <Diffuse x="0.8" y="0.2" z="0.8" w="1.0"/>
+        </Light>
+        
+        <!-- Orange accent light -->
+        <Light>
+            <Position x="0.0" y="5.0" z="0.0" w="1.0"/>
+            <Diffuse x="1.0" y="0.5" z="0.0" w="1.0"/>
+        </Light>
+    </Lights>
+</Scene> 

@@ -67,11 +67,11 @@ struct VertexHash {
     }
 };
 
-class ObjectComponent : public Component{
-
+class ObjectComponent : public Component {
 public:
-    ObjectComponent(const char *obj, const char *basedir, Component* parent, VulkanRenderer* renderer ) : Component(parent),
-        obj_(obj), basedir_(basedir), vk_renderer_(renderer) {
+    ObjectComponent(const char *obj, const char *basedir, Component *parent,
+                    VulkanRenderer *renderer) : Component(parent),
+                                                obj_(obj), basedir_(basedir), vk_renderer_(renderer) {
         loadObj();
         buffer_ = vk_renderer_->CreateVertexBuffer(getOVertices());
         index_buffer_ = vk_renderer_->CreateIndexBuffer(getIndices());
@@ -80,8 +80,11 @@ public:
     };
 
     bool OnCreate() override;
+
     void OnDestroy() override;
+
     void Update(float deltaTime) override;
+
     void Render() const override;
 
     std::vector<oVertex> getOVertices() {
@@ -95,7 +98,7 @@ public:
     std::vector<Material_UBO> getMaterialUBOs() const {
         std::vector<Material_UBO> materialUBOs;
         materialUBOs.reserve(materials_.size());
-for (const auto& [bp_material_ubo_, diffuse_texName]: materials_)
+        for (const auto &[bp_material_ubo_, diffuse_texName]: materials_)
             materialUBOs.push_back(bp_material_ubo_);
         return materialUBOs;
     }
@@ -103,7 +106,7 @@ for (const auto& [bp_material_ubo_, diffuse_texName]: materials_)
     std::vector<std::string> getTextures() {
         std::vector<std::string> textures;
         textures.reserve(materials_.size());
-for (const auto& [bp_material_ubo_, diffuse_texName]: materials_) {
+        for (const auto &[bp_material_ubo_, diffuse_texName]: materials_) {
             textures.push_back(diffuse_texName);
         }
         return textures;
@@ -123,10 +126,11 @@ private:
     std::vector<oVertex> vertices_;
     std::vector<material> materials_;
     std::vector<Mesh> meshes_;
+
     void loadObj();
-    VulkanRenderer* vk_renderer_;
+
+    VulkanRenderer *vk_renderer_;
     BufferHandle buffer_;
     BufferHandle index_buffer_;
     mutable std::vector<TextureHandle> texture_handles_;
 };
-

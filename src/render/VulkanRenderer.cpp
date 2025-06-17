@@ -6,7 +6,6 @@
 
 #include <TextureHandle.h>
 #include <Utilities.h>
-
 #include <CameraPosition.h>
 #include <UniformTransformations.h>
 
@@ -677,7 +676,7 @@ void VulkanRenderer::CreateCommandPool() {
     CheckExit(res, "failed to create command pool!");
 }
 
-void VulkanRenderer::BeginCommands() {
+void VulkanRenderer::BeginCommands() const {
 
     VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 
