@@ -414,18 +414,13 @@ void VulkanRenderer::CreateGraphicsPipeline() {
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
     };
     CreatePipeline(main_pipeline_helper_);
-}
-
-void VulkanRenderer::CreateSkyboxPipeline() {
     skybox_.pipeline = {
         {"shaders/skybox.vert.spv", "shaders/skybox.frag.spv"}, {Skybox::GetBindingDescription()},
         Skybox::GetAttributeDescriptions(), VK_CULL_MODE_NONE, {true, false, VK_COMPARE_OP_LESS_OR_EQUAL},
         {{VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4)}}, {skybox_.descriptor_set_layout}
     };
     CreatePipeline(skybox_.pipeline);
-}
 
-void VulkanRenderer::CreatePostProcessingPipeline() {
     post_processing_.pipeline = {
         {"shaders/post.vert.spv", "shaders/nopost.frag.spv"},
         {},
@@ -450,7 +445,7 @@ void VulkanRenderer::ReloadPostProcessingShader(const std::string &fragment_shad
     post_processing_.pipeline = {
         .shaders = {"shaders/post.vert.spv", fragment_shader_path}, {}, {}, VK_CULL_MODE_BACK_BIT,
         {false, false, VK_COMPARE_OP_ALWAYS},
-        {{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(glm::mat4)}},
+        {{ VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(glm::mat4)}},
         {post_processing_.descriptor_set_layout}
     };
     CreatePipeline(post_processing_.pipeline);
@@ -617,11 +612,8 @@ void VulkanRenderer::CreateRenderPass(VkImageLayout layout, VkRenderPass *render
     CheckExcept(res, "Failed to create render pass!");
 }
 
-void VulkanRenderer::CreateRenderPass() {
+void VulkanRenderer::CreateRenderPasses() {
     CreateRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, &vk_render_pass_);
-}
-
-void VulkanRenderer::CreatePostProcessingRenderPass() {
     CreateRenderPass(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &post_processing_.render_pass);
 }
 
@@ -638,6 +630,7 @@ void VulkanRenderer::CreateFramebuffers() {
         VkResult res = vkCreateFramebuffer(vk_device_, &framebuffer_info, nullptr, &vk_swapchain_framebuffers_[i]);
         CheckExit(res, "failed to create framebuffer!");
     }
+    CreatePostProcessingFramebuffer();
 }
 
 void VulkanRenderer::CreatePostProcessingFramebuffer() {
@@ -676,11 +669,12 @@ void VulkanRenderer::CreateCommandPool() {
     CheckExit(res, "failed to create command pool!");
 }
 
-void VulkanRenderer::BeginCommands() const {
+void VulkanRenderer::BeginCommands() {
+    vkResetCommandBuffer(buffered_frames_[current_frame_].command_buffer, 0);
 
     VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 
-    VkResult res = vkBeginCommandBuffer(command_buffer_, &begin_info);
+    VkResult res = vkBeginCommandBuffer(buffered_frames_[current_frame_].command_buffer, &begin_info);
     CheckExcept(res, "failed to begin command buffer!");
 
     std::array<VkClearValue, 2> clear_values = {};
@@ -693,21 +687,21 @@ void VulkanRenderer::BeginCommands() const {
         clear_values.data()
     };
 
-    vkCmdBeginRenderPass(command_buffer_, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(buffered_frames_[current_frame_].command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
     RenderSkybox();
 
-    vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+    vkCmdBindPipeline(buffered_frames_[current_frame_].command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       main_pipeline_helper_.pipeline);
     VkViewport viewport{GetViewport()};
     VkRect2D scissor{GetScissor()};
 
-    vkCmdSetViewport(command_buffer_, 0, 1, &viewport);
-    vkCmdSetScissor(command_buffer_, 0, 1, &scissor);
+    vkCmdSetViewport(buffered_frames_[current_frame_].command_buffer, 0, 1, &viewport);
+    vkCmdSetScissor(buffered_frames_[current_frame_].command_buffer, 0, 1, &scissor);
 }
 
-void VulkanRenderer::EndCommands() const {
-    vkCmdEndRenderPass(command_buffer_);
+void VulkanRenderer::PostRenderPass() const {
+    vkCmdEndRenderPass(buffered_frames_[current_frame_].command_buffer);
 
     std::array<VkClearValue, 2> clear_values = {};
     clear_values[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -719,11 +713,11 @@ void VulkanRenderer::EndCommands() const {
         clear_values.size(), clear_values.data()
     };
 
-    vkCmdBeginRenderPass(command_buffer_, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(buffered_frames_[current_frame_].command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+    vkCmdBindPipeline(buffered_frames_[current_frame_].command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       post_processing_.pipeline.pipeline);
-    vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+    vkCmdBindDescriptorSets(buffered_frames_[current_frame_].command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             post_processing_.pipeline.pipeline_layout, 0, 1,
                             &post_processing_.descriptor_set, 0, nullptr);
 
@@ -731,20 +725,23 @@ void VulkanRenderer::EndCommands() const {
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float>(currentTime - startTime).count();
 
-    vkCmdPushConstants(command_buffer_, post_processing_.pipeline.pipeline_layout,
+    vkCmdPushConstants(buffered_frames_[current_frame_].command_buffer, post_processing_.pipeline.pipeline_layout,
                        VK_SHADER_STAGE_FRAGMENT_BIT,
                        0, sizeof(float), &time);
 
     VkViewport viewport{GetViewport()};
     VkRect2D scissor{GetScissor()};
-    vkCmdSetViewport(command_buffer_, 0, 1, &viewport);
-    vkCmdSetScissor(command_buffer_, 0, 1, &scissor);
+    vkCmdSetViewport(buffered_frames_[current_frame_].command_buffer, 0, 1, &viewport);
+    vkCmdSetScissor(buffered_frames_[current_frame_].command_buffer, 0, 1, &scissor);
 
-    vkCmdDraw(command_buffer_, 3, 1, 0, 0);
+    vkCmdDraw(buffered_frames_[current_frame_].command_buffer, 3, 1, 0, 0);
+}
 
-    vkCmdEndRenderPass(command_buffer_);
+void VulkanRenderer::EndCommands() const {
+    PostRenderPass();
+    vkCmdEndRenderPass(buffered_frames_[current_frame_].command_buffer);
 
-    const VkResult res = vkEndCommandBuffer(command_buffer_);
+    const VkResult res = vkEndCommandBuffer(buffered_frames_[current_frame_].command_buffer);
     CheckExcept(res, "failed to end command buffer commands");
 }
 
@@ -759,35 +756,41 @@ void VulkanRenderer::CreateSignals() {
         1
     };
 
-    VkResult result = vkCreateSemaphore(vk_device_, &semaphore_info, nullptr, &image_available_semaphore_);
-    CheckExcept(result, "Failed to create image available semaphore!");
+    for (int i =0; i < MAX_BUFFERED_FRAMES; i++) {
+        VkResult result = vkCreateSemaphore(vk_device_, &semaphore_info, nullptr, &buffered_frames_[i].image_available_semaphore);
+        CheckExcept(result, "Failed to create image available semaphore!");
 
-    result = vkCreateSemaphore(vk_device_, &semaphore_info, nullptr, &render_finished_semaphore_);
-    CheckExcept(result, "Failed to create render finished semaphore!");
+        result = vkCreateSemaphore(vk_device_, &semaphore_info, nullptr, &buffered_frames_[i].render_finished_semaphore);
+        CheckExcept(result, "Failed to create render finished semaphore!");
 
-    result = vkCreateFence(vk_device_, &fence_info, nullptr, &in_flight_fence_);
-    CheckExcept(result, "Failed to create fence!");
+        result = vkCreateFence(vk_device_, &fence_info, nullptr, &buffered_frames_[i].still_rendering_fence);
+        CheckExcept(result, "Failed to create fence!");
 
-    result = vkAllocateCommandBuffers(vk_device_, &info, &command_buffer_);
-    CheckExcept(result, "Failed to allocate command buffer!");
+        result = vkAllocateCommandBuffers(vk_device_, &info, &buffered_frames_[i].command_buffer);
+        CheckExcept(result, "Failed to allocate command buffer!");
+    }
 }
 
 bool VulkanRenderer::BeginFrame() {
-    vkWaitForFences(vk_device_, 1, &in_flight_fence_, VK_TRUE, UINT64_MAX);
-    vkResetFences(vk_device_, 1, &in_flight_fence_);
+    vkWaitForFences(vk_device_, 1, &buffered_frames_[current_frame_].still_rendering_fence, VK_TRUE, UINT64_MAX);
+    vkResetFences(vk_device_, 1, &buffered_frames_[current_frame_].still_rendering_fence);
 
     VkResult result = vkAcquireNextImageKHR(vk_device_, vk_swapchain_, UINT64_MAX,
-        image_available_semaphore_, VK_NULL_HANDLE, &current_image_index_);
+                                            buffered_frames_[current_frame_].image_available_semaphore,
+                                            VK_NULL_HANDLE,
+                                            &current_image_index_);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         RecreateSwapchain();
         return false;
-    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        throw std::runtime_error("Failed to acquire swap chain image!");
     }
 
-    vkResetCommandBuffer(command_buffer_, 0);
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        throw std::runtime_error("failed to acquire swap chain image!");
+    }
+
     BeginCommands();
+    //SetModelMatrix(glm::mat4(1.0f));
     return true;
 }
 
@@ -799,21 +802,19 @@ void VulkanRenderer::EndFrame() {
     VkSubmitInfo submit_info{
         VK_STRUCTURE_TYPE_SUBMIT_INFO,
         nullptr,
-        1, &image_available_semaphore_,
+        1, &buffered_frames_[current_frame_].image_available_semaphore,
         &wait_stage_flags,
-        1, &command_buffer_,
-        1, &render_finished_semaphore_
+        1, &buffered_frames_[current_frame_].command_buffer,
+        1, &buffered_frames_[current_frame_].render_finished_semaphore
     };
 
-    VkResult result = vkQueueSubmit(vk_graphics_queue_, 1, &submit_info, in_flight_fence_);
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit draw command buffer!");
-    }
+    VkResult result = vkQueueSubmit(vk_graphics_queue_, 1, &submit_info, buffered_frames_[current_frame_].still_rendering_fence);
+    CheckExcept(result, "Failed to submit draw command buffer!");
 
     VkPresentInfoKHR present_info{
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         nullptr,
-        1, &render_finished_semaphore_,
+        1, &buffered_frames_[current_frame_].render_finished_semaphore,
         1, &vk_swapchain_,
         &current_image_index_
     };
@@ -824,6 +825,8 @@ void VulkanRenderer::EndFrame() {
     } else if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to present swap chain image!");
     }
+
+    current_frame_ = (++current_frame_) % MAX_BUFFERED_FRAMES;
 }
 
 std::uint32_t VulkanRenderer::FindMemoryType(const std::uint32_t memory_type_bits,
@@ -945,55 +948,55 @@ void VulkanRenderer::RenderModel(const BufferHandle vertex_buffer, const BufferH
                                  const glm::mat4 &modelMatrix) {
     int offset = 0;
     VkDeviceSize dOffset = 0;
-    vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+    vkCmdBindDescriptorSets(buffered_frames_[current_frame_].command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             main_pipeline_helper_.pipeline_layout,
                             0, 2,
-                            std::array{vk_uniform_set_, vk_bp_set_}.data(), 0, VK_NULL_HANDLE);
+                            std::array{buffered_frames_[current_frame_].uniform_set, vk_bp_set_}.data(), 0, VK_NULL_HANDLE);
 
-    vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+    vkCmdBindDescriptorSets(buffered_frames_[current_frame_].command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             main_pipeline_helper_.pipeline_layout,
                             3, 1,
                             std::array{vk_lights_set_}.data(), 0, VK_NULL_HANDLE);
-    vkCmdBindVertexBuffers(command_buffer_, 0, 1, &vertex_buffer.buffer, &dOffset);
-    vkCmdBindIndexBuffer(command_buffer_, index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(buffered_frames_[current_frame_].command_buffer, 0, 1, &vertex_buffer.buffer, &dOffset);
+    vkCmdBindIndexBuffer(buffered_frames_[current_frame_].command_buffer, index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     SetModelMatrix(modelMatrix);
     for (const auto &[indices, materialId]: meshes) {
         SetTexture(textures[materialId]);
         SetUBO<Material_UBO>(bp_buffer_location_, &material_ubos[materialId]);
-        vkCmdDrawIndexed(command_buffer_, indices.size(), 1, offset, 0, 0);
+        vkCmdDrawIndexed(buffered_frames_[current_frame_].command_buffer, indices.size(), 1, offset, 0, 0);
         offset += static_cast<int>(indices.size());
     }
 }
 
 void VulkanRenderer::RenderSkybox() const {
-    vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, skybox_.pipeline.pipeline);
+    vkCmdBindPipeline(buffered_frames_[current_frame_].command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, skybox_.pipeline.pipeline);
 
     VkViewport viewport = GetViewport();
     VkRect2D scissor = GetScissor();
-    vkCmdSetViewport(command_buffer_, 0, 1, &viewport);
-    vkCmdSetScissor(command_buffer_, 0, 1, &scissor);
+    vkCmdSetViewport(buffered_frames_[current_frame_].command_buffer, 0, 1, &viewport);
+    vkCmdSetScissor(buffered_frames_[current_frame_].command_buffer, 0, 1, &scissor);
 
     VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(command_buffer_, 0, 1, &skybox_.vertex_buffer.buffer, offsets);
-    vkCmdBindIndexBuffer(command_buffer_, skybox_.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(buffered_frames_[current_frame_].command_buffer, 0, 1, &skybox_.vertex_buffer.buffer, offsets);
+    vkCmdBindIndexBuffer(buffered_frames_[current_frame_].command_buffer, skybox_.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
     UniformTransformations transformations{};
-    memcpy(&transformations, uniform_buffer_location_, sizeof(UniformTransformations));
+    memcpy(&transformations, buffered_frames_[current_frame_].uniform_buffer_location, sizeof(UniformTransformations));
 
     glm::mat4 view = glm::mat4(glm::mat3(transformations.view));
 
     UniformTransformations skybox_transforms{view, transformations.projection};
-    memcpy(uniform_buffer_location_, &skybox_transforms, sizeof(UniformTransformations));
+    memcpy(buffered_frames_[current_frame_].uniform_buffer_location, &skybox_transforms, sizeof(UniformTransformations));
 
-    vkCmdBindDescriptorSets(command_buffer_,
+    vkCmdBindDescriptorSets(buffered_frames_[current_frame_].command_buffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             skybox_.pipeline.pipeline_layout,
                             0, 1, &skybox_.descriptor_set,
                             0, nullptr);
 
-    vkCmdDrawIndexed(command_buffer_, 36, 1, 0, 0, 0);
+    vkCmdDrawIndexed(buffered_frames_[current_frame_].command_buffer, 36, 1, 0, 0, 0);
 
-    memcpy(uniform_buffer_location_, &transformations, sizeof(UniformTransformations));
+    memcpy(buffered_frames_[current_frame_].uniform_buffer_location, &transformations, sizeof(UniformTransformations));
 }
 
 VkFormat VulkanRenderer::FindDepthFormat() const {
@@ -1013,7 +1016,7 @@ bool VulkanRenderer::HasStencilComponent(const VkFormat format) {
 }
 
 void VulkanRenderer::SetModelMatrix(const glm::mat4 &matrix) const {
-    vkCmdPushConstants(command_buffer_, main_pipeline_helper_.pipeline_layout,
+        vkCmdPushConstants(buffered_frames_[current_frame_].command_buffer, main_pipeline_helper_.pipeline_layout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0,
                        sizeof(glm::mat4), &matrix);
 }
@@ -1021,7 +1024,9 @@ void VulkanRenderer::SetModelMatrix(const glm::mat4 &matrix) const {
 void VulkanRenderer::SetViewProjection(const glm::mat4 &matrix, const glm::mat4 &projection,
                                        const glm::vec3 cameraPos) const {
     UniformTransformations transformations{matrix, projection, cameraPos};
-    SetUBO<UniformTransformations>(uniform_buffer_location_, &transformations);
+    for (int i = 0; i < MAX_BUFFERED_FRAMES; ++i) {
+        SetUBO<UniformTransformations>(buffered_frames_[i].uniform_buffer_location, &transformations);
+    }
 }
 
 template<typename T>
@@ -1065,9 +1070,12 @@ void VulkanRenderer::EndTransientCommandBuffer(VkCommandBuffer command_buffer) c
 
 void VulkanRenderer::CreateUniformBuffers() {
     VkDeviceSize buffer_size = sizeof(UniformTransformations);
-    uniform_buffer_ = CreateBuffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    vkMapMemory(vk_device_, uniform_buffer_.memory, 0, buffer_size, 0, &uniform_buffer_location_);
+    
+    for (int i = 0; i < MAX_BUFFERED_FRAMES; ++i) {
+        buffered_frames_[i].uniform_buffer_handle = CreateBuffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        vkMapMemory(vk_device_, buffered_frames_[i].uniform_buffer_handle.memory, 0, buffer_size, 0, &buffered_frames_[i].uniform_buffer_location);
+    }
 
     VkDeviceSize bp_size = sizeof(Material_UBO);
     bp_buffer_handle_ = CreateBuffer(bp_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -1117,26 +1125,42 @@ void VulkanRenderer::CreateDescriptorSetLayouts() {
         VK_SHADER_STAGE_FRAGMENT_BIT
     };
     CreateDescriptorSetLayout({texture_layout_binding}, &vk_texture_set_layout_);
-}
 
-void VulkanRenderer::CreateSkyboxDescriptorSetLayout() {
     const std::vector bindings = {
         VkDescriptorSetLayoutBinding{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT},
         VkDescriptorSetLayoutBinding{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT}
     };
+
     CreateDescriptorSetLayout(bindings, &skybox_.descriptor_set_layout);
+
+    VkDescriptorSetLayoutBinding sampler_binding{
+        0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+        VK_SHADER_STAGE_FRAGMENT_BIT
+    };
+
+    CreateDescriptorSetLayout({sampler_binding}, &post_processing_.descriptor_set_layout);
 }
 
 void VulkanRenderer::CreateDescriptorPools() {
-    VkDescriptorPoolSize uniform_pool_sizes{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3};
+    VkDescriptorPoolSize uniform_pool_sizes{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_BUFFERED_FRAMES + 2};
 
     VkDescriptorPoolCreateInfo pool_info{
-        VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, nullptr, 0, 3,
+        VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, nullptr, 0, MAX_BUFFERED_FRAMES + 2,
         1, &uniform_pool_sizes
     };
 
     VkResult res = vkCreateDescriptorPool(vk_device_, &pool_info, nullptr, &vk_uniform_pool_);
     CheckExit(res, "Failed to create uniform pool!");
+
+    VkDescriptorPoolSize pool_size{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1};
+
+    VkDescriptorPoolCreateInfo pool_info1{
+        VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, nullptr, 0, 1,
+        1, &pool_size
+    };
+
+    res = vkCreateDescriptorPool(vk_device_, &pool_info1, nullptr, &post_processing_.descriptor_pool);
+    CheckExcept(res, "Failed to create post-processing descriptor pool!");
 
     VkPhysicalDeviceProperties device_properties{};
     vkGetPhysicalDeviceProperties(vk_physical_device_, &device_properties);
@@ -1159,11 +1183,19 @@ void VulkanRenderer::AllocateDescriptorSet(const VkDescriptorSetAllocateInfo &al
 }
 
 void VulkanRenderer::CreateDescriptorSets() {
-    VkDescriptorSetAllocateInfo alloc_info{
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, vk_uniform_pool_, 1, &vk_uniform_set_layout_
-    };
-    AllocateDescriptorSet(alloc_info, &vk_uniform_set_);
-    VkDescriptorBufferInfo info{uniform_buffer_.buffer, 0, sizeof(UniformTransformations)};
+    for (int i = 0; i < MAX_BUFFERED_FRAMES; ++i) {
+        VkDescriptorSetAllocateInfo alloc_info{
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, vk_uniform_pool_, 1, &vk_uniform_set_layout_
+        };
+        AllocateDescriptorSet(alloc_info, &buffered_frames_[i].uniform_set);
+        
+        VkDescriptorBufferInfo info{buffered_frames_[i].uniform_buffer_handle.buffer, 0, sizeof(UniformTransformations)};
+        VkWriteDescriptorSet uniform_write{
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, buffered_frames_[i].uniform_set, 0, 0, 1,
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, nullptr, &info
+        };
+        vkUpdateDescriptorSets(vk_device_, 1, &uniform_write, 0, nullptr);
+    }
 
     VkDescriptorSetAllocateInfo bp_descriptor_set_allocate_info{
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, vk_uniform_pool_, 1, &vk_uniform_bp_set_layout_
@@ -1177,11 +1209,18 @@ void VulkanRenderer::CreateDescriptorSets() {
     AllocateDescriptorSet(lights_descriptor_set_allocate_info, &vk_lights_set_);
     VkDescriptorBufferInfo light{g_light_handle_.buffer, 0, sizeof(GlobalLighting)};
 
+    VkDescriptorSetAllocateInfo alloc_info1{
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, vk_texture_pool_,
+        1, &post_processing_.descriptor_set_layout
+    };
+    AllocateDescriptorSet(alloc_info1, &post_processing_.descriptor_set);
+
+    VkDescriptorImageInfo image_info{
+        post_processing_.sampler, post_processing_.color_view,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    };
+
     std::array writes = {
-        VkWriteDescriptorSet{
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, vk_uniform_set_, 0, 0, 1,
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, nullptr, &info
-        },
         VkWriteDescriptorSet{
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, vk_bp_set_, 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             nullptr, &blin
@@ -1189,66 +1228,14 @@ void VulkanRenderer::CreateDescriptorSets() {
         VkWriteDescriptorSet{
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, vk_lights_set_, 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             nullptr, &light
+        },
+        VkWriteDescriptorSet{
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, post_processing_.descriptor_set, 0, 0,
+            1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &image_info,
         }
     };
 
     vkUpdateDescriptorSets(vk_device_, writes.size(), writes.data(), 0, nullptr);
-}
-
-void VulkanRenderer::CreatePostProcessingDescriptorSet() {
-    VkDescriptorSetLayoutBinding sampler_binding{
-        0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-        VK_SHADER_STAGE_FRAGMENT_BIT
-    };
-
-    VkDescriptorSetLayoutCreateInfo layout_info{
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, 0,
-        1, &sampler_binding
-    };
-
-    VkResult res = vkCreateDescriptorSetLayout(vk_device_, &layout_info, nullptr,
-                                               &post_processing_.descriptor_set_layout);
-    CheckExcept(res, "Failed to create post-processing descriptor set layout!");
-
-    VkDescriptorPoolSize pool_size{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1};
-
-    VkDescriptorPoolCreateInfo pool_info{
-        VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, nullptr, 0, 1,
-        1, &pool_size
-    };
-
-    res = vkCreateDescriptorPool(vk_device_, &pool_info, nullptr, &post_processing_.descriptor_pool);
-    CheckExcept(res, "Failed to create post-processing descriptor pool!");
-
-    VkDescriptorSetAllocateInfo alloc_info{
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
-        post_processing_.descriptor_pool, 1, &post_processing_.descriptor_set_layout
-    };
-
-    res = vkAllocateDescriptorSets(vk_device_, &alloc_info, &post_processing_.descriptor_set);
-    CheckExcept(res, "Failed to allocate post-processing descriptor set!");
-
-    VkSamplerCreateInfo sampler_info{
-        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, nullptr, 0, VK_FILTER_LINEAR, VK_FILTER_LINEAR
-    };
-    sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-
-    res = vkCreateSampler(vk_device_, &sampler_info, nullptr, &post_processing_.sampler);
-    CheckExcept(res, "Failed to create post-processing sampler!");
-
-    VkDescriptorImageInfo image_info{
-        post_processing_.sampler, post_processing_.color_view,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-    };
-
-    VkWriteDescriptorSet descriptor_write{
-        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, post_processing_.descriptor_set, 0, 0,
-        1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &image_info,
-    };
-
-    vkUpdateDescriptorSets(vk_device_, 1, &descriptor_write, 0, nullptr);
 }
 
 void VulkanRenderer::CreateTextureSampler() {
@@ -1261,6 +1248,15 @@ void VulkanRenderer::CreateTextureSampler() {
 
     VkResult res = vkCreateSampler(vk_device_, &sampler_info, nullptr, &vk_texture_sampler_);
     CheckExit(res, "Failed to create texture sampler!");
+
+    sampler_info = {
+        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, nullptr, 0, VK_FILTER_LINEAR, VK_FILTER_LINEAR,
+        VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE
+    };
+
+    res = vkCreateSampler(vk_device_, &sampler_info, nullptr, &post_processing_.sampler);
+    CheckExcept(res, "Failed to create post-processing sampler!");
 }
 
 void VulkanRenderer::CreateDepthResources() {
@@ -1398,7 +1394,7 @@ void VulkanRenderer::CreateSkyboxImage(const std::array<const char *, 6> &cubema
     vkAllocateDescriptorSets(vk_device_, &descriptor_alloc_info, &skybox_.descriptor_set);
     CheckExcept(res, "Failed to allocate skybox descriptor set!");
 
-    VkDescriptorBufferInfo uniform_buffer_info{uniform_buffer_.buffer, 0, sizeof(UniformTransformations)};
+    VkDescriptorBufferInfo uniform_buffer_info{buffered_frames_[current_frame_].uniform_buffer_handle.buffer, 0, sizeof(UniformTransformations)};
     VkDescriptorImageInfo image_info{skybox_.sampler, skybox_.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
 
     std::array descriptor_writes{
@@ -1465,7 +1461,7 @@ TextureHandle VulkanRenderer::CreateTexture(const char *path) {
 }
 
 void VulkanRenderer::SetTexture(const TextureHandle &handle) const {
-    vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+    vkCmdBindDescriptorSets(buffered_frames_[current_frame_].command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             main_pipeline_helper_.pipeline_layout,
                             2, 1, &handle.descriptor_set, 0, VK_NULL_HANDLE);
 }
@@ -1572,30 +1568,21 @@ void VulkanRenderer::RecreateSwapchain() {
     CreateImageViews();
     CreateFramebuffers();
 
-    // Recreate synchronization objects for the new swapchain
-    vkDestroySemaphore(vk_device_, image_available_semaphore_, nullptr);
-    vkDestroySemaphore(vk_device_, render_finished_semaphore_, nullptr);
-    vkDestroyFence(vk_device_, in_flight_fence_, nullptr);
-    vkFreeCommandBuffers(vk_device_, vk_command_pool_, 1, &command_buffer_);
+    for (int i = 0; i < MAX_BUFFERED_FRAMES; ++i) {
+        vkDestroySemaphore(vk_device_, buffered_frames_[i].image_available_semaphore, nullptr);
+        vkDestroySemaphore(vk_device_, buffered_frames_[i].render_finished_semaphore, nullptr);
+        vkDestroyFence(vk_device_, buffered_frames_[i].still_rendering_fence, nullptr);
+        vkFreeCommandBuffers(vk_device_, vk_command_pool_, 1, &buffered_frames_[i].command_buffer);
+    }
     CreateSignals();
+    
+    current_frame_ = 0;
 }
 
 void VulkanRenderer::CreateSkyboxResources() {
-    CreateSkyboxDescriptorSetLayout();
-    CreateSkyboxPipeline();
-    auto vertices = CreateSkyboxVertices();
-    auto indices = CreateSkyboxIndices();
-
-    skybox_.vertex_buffer = CreateVertexBuffer(vertices);
-    skybox_.index_buffer = CreateIndexBuffer(indices);
+    skybox_.vertex_buffer = CreateVertexBuffer(CreateSkyboxVertices());
+    skybox_.index_buffer = CreateIndexBuffer(CreateSkyboxIndices());
     CreateSkyboxImage(cubemap_);
-}
-
-void VulkanRenderer::CreatePostProcessingResources() {
-    CreatePostProcessingRenderPass();
-    CreatePostProcessingFramebuffer();
-    CreatePostProcessingDescriptorSet();
-    CreatePostProcessingPipeline();
 }
 
 void VulkanRenderer::HandleShaderSwitch(int key) {
@@ -1711,10 +1698,13 @@ void VulkanRenderer::OnDestroy() {
         if (vk_uniform_pool_ != VK_NULL_HANDLE)
             vkDestroyDescriptorPool(vk_device_, vk_uniform_pool_, nullptr);
 
-        if (uniform_buffer_location_) {
-            vkUnmapMemory(vk_device_, uniform_buffer_.memory);
-            uniform_buffer_location_ = nullptr;
+        for (int i = 0; i < MAX_BUFFERED_FRAMES; ++i) {
+            if (buffered_frames_[i].uniform_buffer_location) {
+                vkUnmapMemory(vk_device_, buffered_frames_[i].uniform_buffer_handle.memory);
+                buffered_frames_[i].uniform_buffer_location = nullptr;
+            }
         }
+
         if (bp_buffer_location_) {
             vkUnmapMemory(vk_device_, bp_buffer_handle_.memory);
             bp_buffer_location_ = nullptr;
@@ -1725,7 +1715,9 @@ void VulkanRenderer::OnDestroy() {
         }
 
         DestroyBuffer(g_light_handle_);
-        DestroyBuffer(uniform_buffer_);
+        for (int i = 0; i < MAX_BUFFERED_FRAMES; ++i) {
+            DestroyBuffer(buffered_frames_[i].uniform_buffer_handle);
+        }
         DestroyBuffer(bp_buffer_handle_);
 
         if (vk_uniform_set_layout_ != VK_NULL_HANDLE)
@@ -1737,9 +1729,11 @@ void VulkanRenderer::OnDestroy() {
 
         vkDeviceWaitIdle(vk_device_);
 
-        vkDestroySemaphore(vk_device_, image_available_semaphore_, nullptr);
-        vkDestroySemaphore(vk_device_, render_finished_semaphore_, nullptr);
-        vkDestroyFence(vk_device_, in_flight_fence_, nullptr);
+        for (int i = 0; i < MAX_BUFFERED_FRAMES; ++i) {
+            vkDestroySemaphore(vk_device_, buffered_frames_[i].image_available_semaphore, nullptr);
+            vkDestroySemaphore(vk_device_, buffered_frames_[i].render_finished_semaphore, nullptr);
+            vkDestroyFence(vk_device_, buffered_frames_[i].still_rendering_fence, nullptr);
+        }
 
         if (vk_still_rendering_fence_ != VK_NULL_HANDLE)
             vkDestroyFence(vk_device_, vk_still_rendering_fence_, nullptr);
@@ -1776,7 +1770,7 @@ void VulkanRenderer::InitializeVulkan() {
     CreateLogicalDeviceAndQueues();
     CreateSwapChain();
     CreateImageViews();
-    CreateRenderPass();
+    CreateRenderPasses();
     CreateDescriptorSetLayouts();
     CreateGraphicsPipeline();
     CreateDepthResources();
@@ -1785,12 +1779,8 @@ void VulkanRenderer::InitializeVulkan() {
     CreateSignals();
     CreateUniformBuffers();
     CreateDescriptorPools();
-    CreateDescriptorSets();
     CreateTextureSampler();
+    CreateDescriptorSets();
     TransitionImageLayout(depth_texture_.image, VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
-    CreatePostProcessingResources();
-
-    current_image_index_ = 0;
 }

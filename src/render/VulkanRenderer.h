@@ -10,6 +10,8 @@
 #include <render/Renderer.h>
 #include <window/Window.h>
 
+#define MAX_BUFFERED_FRAMES (4)
+
 struct oVertex;
 struct Material_UBO;
 struct Mesh;
@@ -104,11 +106,16 @@ struct PostProcessing {
     VkSampler sampler = VK_NULL_HANDLE;
 };
 
-struct FrameResources {
-    VkSemaphore imageAvailableSemaphore = VK_NULL_HANDLE;
-    VkSemaphore renderFinishedSemaphore = VK_NULL_HANDLE;
-    VkFence inFlightFence = VK_NULL_HANDLE;
-    VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+struct Frame {
+    VkSemaphore image_available_semaphore = VK_NULL_HANDLE;
+    VkSemaphore render_finished_semaphore = VK_NULL_HANDLE;
+    VkFence still_rendering_fence = VK_NULL_HANDLE;
+
+    VkCommandBuffer command_buffer = VK_NULL_HANDLE;
+
+    VkDescriptorSet uniform_set = VK_NULL_HANDLE;
+    BufferHandle uniform_buffer_handle;
+    void *uniform_buffer_location = VK_NULL_HANDLE;
 };
 
 class VulkanRenderer : public Renderer {
@@ -163,14 +170,9 @@ public:
 
     void CreateSkyboxResources();
 
-    void *uniform_buffer_location_ = VK_NULL_HANDLE;
     void *global_lights_buffer_location_ = VK_NULL_HANDLE;
 
 private:
-    VkSemaphore image_available_semaphore_ = VK_NULL_HANDLE;
-    VkSemaphore render_finished_semaphore_= VK_NULL_HANDLE;
-    VkFence in_flight_fence_= VK_NULL_HANDLE;
-    VkCommandBuffer command_buffer_= VK_NULL_HANDLE;
 
     void PickPhysicalDevice();
 
@@ -202,13 +204,15 @@ private:
 
     void CreateRenderPass(VkImageLayout layout, VkRenderPass *render_pass) const;
 
-    void CreateRenderPass();
+    void CreateRenderPasses();
 
     void CreateFramebuffers();
 
     void CreateCommandPool();
 
-    void BeginCommands() const;
+    void BeginCommands();
+
+    void PostRenderPass() const;
 
     void EndCommands() const;
 
@@ -318,12 +322,14 @@ private:
     VkDescriptorSetLayout vk_uniform_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorPool vk_uniform_pool_ = VK_NULL_HANDLE;
     VkDescriptorSet vk_uniform_set_ = VK_NULL_HANDLE;
-    BufferHandle uniform_buffer_{};
 
     VkDescriptorSetLayout vk_texture_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorPool vk_texture_pool_ = VK_NULL_HANDLE;
     VkSampler vk_texture_sampler_ = VK_NULL_HANDLE;
     TextureHandle depth_texture_{};
+
+    std::array<Frame, MAX_BUFFERED_FRAMES> buffered_frames_;
+    std::int32_t current_frame_ = 0;
 
     VkDescriptorSetLayout vk_uniform_bp_set_layout_ = VK_NULL_HANDLE;
     VkDescriptorSet vk_bp_set_ = VK_NULL_HANDLE;
@@ -336,10 +342,6 @@ private:
 
     Skybox skybox_{};
 
-    void CreateSkyboxPipeline();
-
-    void CreateSkyboxDescriptorSetLayout();
-
     void CreateSkyboxImage(const std::array<const char *, 6> &cubemap_paths);
 
     void RenderSkybox() const;
@@ -348,15 +350,7 @@ private:
 
     [[nodiscard]] static bool HasStencilComponent(VkFormat format);
 
-    void CreatePostProcessingResources();
-
-    void CreatePostProcessingPipeline();
-
-    void CreatePostProcessingRenderPass();
-
     void CreatePostProcessingFramebuffer();
-
-    void CreatePostProcessingDescriptorSet();
 
     void DestroyPostProcessingResources() const;
 
