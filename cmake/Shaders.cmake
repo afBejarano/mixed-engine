@@ -5,6 +5,8 @@ function(add_shaders TARGET_NAME)
         message(FATAL_ERROR "Cannot add shaders target without shader files!")
     endif ()
 
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/shaders")
+
     set(SHADER_COMMANDS)
     set(SHADER_PRODUCTS)
 
