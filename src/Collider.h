@@ -4,26 +4,26 @@
 
 #pragma once
 #include <precomp.h>
-#include <components/Component.h>
+#include <components/BaseComponent.h>
 
 enum ColliderType {
     sphere = 1,
     box = 2
 };
 
-class Collider final : public Component {
+class Collider final : public BaseComponent {
 
 public:
     glm::vec3 maxCorner;
     glm::vec3 minCorner;
     bool active = true;
 
-    Collider(const glm::vec3 nsPosition, const float nColliderRadius, Component *parent_) : Component(parent_),
+    Collider(const glm::vec3 nsPosition, const float nColliderRadius, BaseComponent *parent_) : BaseComponent(parent_),
         maxCorner({}), minCorner({}), colliderRadius(nColliderRadius), sPosition(nsPosition) {
         type = sphere;
     }
 
-    Collider(const glm::vec3 nMaxCorner, const glm::vec3 nMinCorner, Component *parent_) : Component(parent_),
+    Collider(const glm::vec3 nMaxCorner, const glm::vec3 nMinCorner, BaseComponent *parent_) : BaseComponent(parent_),
         maxCorner(nMaxCorner), minCorner(nMinCorner), colliderRadius(), sPosition() {
         type = box;
     }

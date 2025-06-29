@@ -112,7 +112,7 @@ void LoadActors(VulkanRenderer *vRenderer, const rapidxml::xml_node<> *baseNode,
                 auto *scale = node2->first_node("Scale");
                 auto v_scale = GetVector(scale);
 
-                actor->AddComponent<TransformComponent, Component *, glm::vec3, glm::quat, glm::vec3>(
+                actor->AddComponent<TransformComponent, BaseComponent *, glm::vec3, glm::quat, glm::vec3>(
                     actor, std::move(position), glm::quat(v_orientation), std::move(v_scale));
             }
         }

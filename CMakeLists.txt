@@ -59,16 +59,7 @@ file(GLOB_RECURSE MixedEngineSources CONFIGURE_DEPENDS
         "${IMGUI_BACKENDS_DIR}/imgui_impl_vulkan.cpp"
 )
 
-add_executable(MixedEngine ${MixedEngineSources} ${IMGUI_CORE_SOURCES}
-        src/components/ObjectComponent.cpp
-        src/components/ObjectComponent.h
-        external/tiny_obj_loader.h
-        src/Trackball.cpp
-        src/Trackball.h
-        src/GlobalLight.h
-        src/render/Postprocesing.cpp
-        src/render/Postprocesing.h
-)
+add_executable(MixedEngine ${MixedEngineSources} ${IMGUI_CORE_SOURCES} external/tiny_obj_loader.h)
 
 target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog::spdlog)
 

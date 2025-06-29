@@ -36,7 +36,7 @@ void Actor::Update(const float deltaTime) {
 }
 
 void Actor::Render()const {
-    for (Component* component : components) {
+    for (BaseComponent* component : components) {
         component->Render();
     }
 }

@@ -3,12 +3,12 @@
 //
 
 #pragma once
-#include <components/Component.h>
+#include <components/BaseComponent.h>
 
-class TransformComponent final : public Component {
+class TransformComponent final : public BaseComponent {
 public:
-    explicit TransformComponent(Component* parent_);
-    TransformComponent(Component* parent_,glm::vec3 pos_, glm::quat orientation_, glm::vec3 scale_ = glm::vec3(1.0f, 1.0f, 1.0f));
+    explicit TransformComponent(BaseComponent* parent_);
+    TransformComponent(BaseComponent* parent_,glm::vec3 pos_, glm::quat orientation_, glm::vec3 scale_ = glm::vec3(1.0f, 1.0f, 1.0f));
     ~TransformComponent() override;
     bool OnCreate() override;
     void OnDestroy() override;

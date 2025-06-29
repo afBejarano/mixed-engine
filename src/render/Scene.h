@@ -25,5 +25,5 @@ public:
     GlobalLighting* global_lighting_ = nullptr;
 private:
     Renderer* renderer;
-    std::vector<Component*> components_;
+    std::vector<BaseComponent*> components_;
 };

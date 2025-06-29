@@ -4,14 +4,14 @@
 
 #include <components/TransformComponent.h>
 
-TransformComponent::TransformComponent(Component* parent_):Component(parent_) {
+TransformComponent::TransformComponent(BaseComponent* parent_):BaseComponent(parent_) {
     pos = glm::vec3(0.0f, 0.0f, 0.0f);
     orientation = glm::quat(1.0f, glm::vec3(0.0f, 0.0f, 0.0f));
     scale = glm::vec3(1.0f, 1.0f, 1.0f);
 }
 
-TransformComponent::TransformComponent(Component* parent_, glm::vec3 pos_, glm::quat orientation_, glm::vec3 scale_):
-    Component{ parent_ }, pos{ pos_ }, orientation{ orientation_ }, scale{ scale_ } {
+TransformComponent::TransformComponent(BaseComponent* parent_, glm::vec3 pos_, glm::quat orientation_, glm::vec3 scale_):
+    BaseComponent{ parent_ }, pos{ pos_ }, orientation{ orientation_ }, scale{ scale_ } {
 }
 
 TransformComponent::~TransformComponent() = default;

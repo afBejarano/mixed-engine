@@ -38,7 +38,7 @@ void Scene::Render() {
         auto *vRenderer = dynamic_cast<VulkanRenderer *>(renderer);
         VulkanRenderer::SetUBO<GlobalLighting>(vRenderer->global_lights_buffer_location_, global_lighting_);
     }
-    for (Component *component: components_) {
+    for (BaseComponent *component: components_) {
         component->Render();
     }
 }

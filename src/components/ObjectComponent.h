@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#include <components/Component.h>
+#include <components/BaseComponent.h>
 #include <render/VulkanRenderer.h>
 
 struct Mesh {
@@ -67,10 +67,10 @@ struct VertexHash {
     }
 };
 
-class ObjectComponent : public Component {
+class ObjectComponent : public BaseComponent {
 public:
-    ObjectComponent(const char *obj, const char *basedir, Component *parent,
-                    VulkanRenderer *renderer) : Component(parent),
+    ObjectComponent(const char *obj, const char *basedir, BaseComponent *parent,
+                    VulkanRenderer *renderer) : BaseComponent(parent),
                                                 obj_(obj), basedir_(basedir), vk_renderer_(renderer) {
         loadObj();
         buffer_ = vk_renderer_->CreateVertexBuffer(getOVertices());

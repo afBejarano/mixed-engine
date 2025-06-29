@@ -6,10 +6,10 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 
-#include <components/Component.h>
+#include <components/BaseComponent.h>
 
-class Actor : public Component {
-    std::vector<Component*> components;
+class Actor : public BaseComponent {
+    std::vector<BaseComponent*> components;
 
 protected:
     glm::mat4 modelMatrix;
@@ -20,9 +20,9 @@ public:
     Actor &operator=(const Actor &) = delete;
     Actor &operator=(Actor &&) = delete;
 
-    Actor(Component *parent_): Component(parent_) {}
+    Actor(BaseComponent *parent_): BaseComponent(parent_) {}
 
-    Actor(): Component(nullptr) {}
+    Actor(): BaseComponent(nullptr) {}
 
     bool OnCreate() override;
     ~Actor() override;
@@ -38,7 +38,7 @@ public:
 
     template<typename ComponentTemplate>
     ComponentTemplate* GetComponent() {
-        for (Component* component: components) {
+        for (BaseComponent* component: components) {
             if (dynamic_cast<ComponentTemplate*>(component) != nullptr) {
                 return dynamic_cast<ComponentTemplate*>(component);
             }
