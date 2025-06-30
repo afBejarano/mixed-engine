@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <Collider.h>
+#include <components/Collider.h>
 
 class CameraPosition {
 public:

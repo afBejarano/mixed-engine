@@ -267,7 +267,7 @@ void VulkanRenderer::CreateLogicalDeviceAndQueues() {
             unique_queue_family, 1, &priority
         });
 
-    VkPhysicalDeviceFeatures required_features{.depthBounds = false, .depthClamp = false};
+    VkPhysicalDeviceFeatures required_features{.depthClamp = VK_FALSE, .depthBounds = false};
 
 #ifndef __APPLE__
     required_features.depthBounds = true;
@@ -443,7 +443,7 @@ void VulkanRenderer::ReloadPostProcessingShader(const std::string &fragment_shad
         vkDestroyPipelineLayout(vk_device_, post_processing_.pipeline.pipeline_layout, nullptr);
 
     post_processing_.pipeline = {
-        .shaders = {"shaders/post.vert.spv", fragment_shader_path}, {}, {}, VK_CULL_MODE_BACK_BIT,
+        {"shaders/post.vert.spv", fragment_shader_path}, {}, {}, VK_CULL_MODE_BACK_BIT,
         {false, false, VK_COMPARE_OP_ALWAYS},
         {{ VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(glm::mat4)}},
         {post_processing_.descriptor_set_layout}

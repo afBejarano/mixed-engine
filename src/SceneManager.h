@@ -38,6 +38,12 @@ private:
     Camera* camera;
     Trackball* trackball;
 
+    glm::vec3 camPos;
+    glm::vec3 camTarget;
+    glm::vec3 camUp;
+
+    int currentSceneNumber;
+
     Renderer* renderer;
     unsigned int fps;
     bool isRunning;

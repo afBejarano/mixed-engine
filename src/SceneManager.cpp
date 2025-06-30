@@ -26,9 +26,53 @@ SceneManager::~SceneManager() {
 void SceneManager::Run() {
     while (!glfwWindowShouldClose(window->getGLFWwindow())) {
         glfwPollEvents();
-        if (trackball) {
-            trackball->HandleEvents(); // Handle trackball events
+        if ((currentSceneNumber == 1 || currentSceneNumber == 2) && trackball) {
+            trackball->HandleEvents();
         }
+
+        if (currentSceneNumber == 3 || currentSceneNumber == 4) {
+            float moveSpeed = 0.02f;
+            float lookSpeed = 0.05f;
+            glm::vec3 forward = glm::normalize(camTarget - camPos);
+            glm::vec3 right = glm::normalize(glm::cross(forward, camUp));
+
+            if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_W) == GLFW_PRESS) {
+                camPos += moveSpeed * forward;
+                camTarget += moveSpeed * forward;
+            }
+            if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_S) == GLFW_PRESS) {
+                camPos -= moveSpeed * forward;
+                camTarget -= moveSpeed * forward;
+            }
+            if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_A) == GLFW_PRESS) {
+                camPos -= moveSpeed * right;
+                camTarget -= moveSpeed * right;
+            }
+            if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_D) == GLFW_PRESS) {
+                camPos += moveSpeed * right;
+                camTarget += moveSpeed * right;
+            }
+
+            if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_UP) == GLFW_PRESS) {
+                camTarget -= lookSpeed * camUp;
+            }
+            if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_DOWN) == GLFW_PRESS) {
+                camTarget += lookSpeed * camUp;
+            }
+            if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_LEFT) == GLFW_PRESS) {
+                camTarget -= lookSpeed * right;
+            }
+            if (glfwGetKey(window->getGLFWwindow(), GLFW_KEY_RIGHT) == GLFW_PRESS) {
+                camTarget += lookSpeed * right;
+            }
+
+            camera->LookAt(camPos, camTarget, camUp);
+            if (renderType == RendererType::VULKAN) {
+                VulkanRenderer *vRenderer = dynamic_cast<VulkanRenderer *>(renderer);
+                vRenderer->SetViewProjection(camera->GetViewMatrix(), camera->GetProjectionMatrix(), camPos);
+            }
+        }
+
         if (renderType == RendererType::VULKAN) {
             VulkanRenderer *vRenderer = dynamic_cast<VulkanRenderer *>(renderer);
             for (auto key: vRenderer->shaders_)
@@ -60,12 +104,12 @@ bool SceneManager::Initialize(const std::string &name_, const int width_, const 
             {GLFW_KEY_0, "shaders/brightness.frag.spv"},
             {GLFW_KEY_P, "shaders/bloom.frag.spv"},
             {GLFW_KEY_G, "shaders/glitch.frag.spv"},
-            {GLFW_KEY_D, "shaders/dream.frag.spv"},
+            {GLFW_KEY_F, "shaders/CRT-dynamic.frag.spv"},
+            {GLFW_KEY_H, "shaders/dream.frag.spv"},
         };
     }
-    camera = new Camera(); // Create camera
+    camera = new Camera();
     trackball = new Trackball(window->getGLFWwindow(), camera, dynamic_cast<VulkanRenderer *>(renderer));
-    // Create trackball with renderer
     currentScene = LoadScene("./assets/scenes/Scene3.xml");
 
     return true;
@@ -121,6 +165,11 @@ void LoadActors(VulkanRenderer *vRenderer, const rapidxml::xml_node<> *baseNode,
 }
 
 Scene *SceneManager::LoadScene(const std::string &name_) {
+    if (name_.find("Scene1.xml") != std::string::npos) currentSceneNumber = 1;
+    else if (name_.find("Scene2.xml") != std::string::npos) currentSceneNumber = 2;
+    else if (name_.find("Scene3.xml") != std::string::npos) currentSceneNumber = 3;
+    else if (name_.find("Scene4.xml") != std::string::npos) currentSceneNumber = 4;
+
     rapidxml::file xmlFile(name_.c_str());
     rapidxml::xml_document doc;
     doc.parse<0>(xmlFile.data());
@@ -166,8 +215,11 @@ Scene *SceneManager::LoadScene(const std::string &name_) {
         camera->LookAt(eye, center, up);
         trackball->SetInitialView(eye, center, up);
 
-        // Set view and projection in renderer
         vRenderer->SetViewProjection(camera->GetViewMatrix(), camera->GetProjectionMatrix(), eye);
+
+        camPos = eye;
+        camTarget = center;
+        camUp = up;
 
         LoadActors(vRenderer, baseNode->first_node("Actors"), scene);
         vRenderer->cubemap_ = names;
