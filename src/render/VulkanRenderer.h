@@ -165,12 +165,13 @@ public:
 
     void HandleShaderSwitch(int key);
 
-    std::unordered_map<int, std::string> shaders_ = {};
     std::array<const char *, 6> cubemap_{};
 
     void CreateSkyboxResources();
 
     void *global_lights_buffer_location_ = VK_NULL_HANDLE;
+
+    std::unordered_map<int, std::string> shaders_ = {};
 
 private:
 

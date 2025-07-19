@@ -9,6 +9,7 @@
 #include <rapidxml-1.13/rapidxml_utils.hpp>
 
 #include <Camera.h>
+#include <MacTypes.h>
 #include <Trackball.h>
 
 #include <components/TransformComponent.h>
@@ -89,28 +90,11 @@ void SceneManager::Run() {
 bool SceneManager::Initialize(const std::string &name_, const int width_, const int height_) {
     window = new Window(name_.c_str(), width_, height_, false);
     renderer = new VulkanRenderer(window);
-    if (renderType == RendererType::VULKAN) {
-        VulkanRenderer *vRenderer = dynamic_cast<VulkanRenderer *>(renderer);
-        vRenderer->shaders_ = {
-            {GLFW_KEY_1, "shaders/nopost.frag.spv"},
-            {GLFW_KEY_2, "shaders/grayscale.frag.spv"},
-            {GLFW_KEY_3, "shaders/colorReduction.frag.spv"},
-            {GLFW_KEY_4, "shaders/scanlines.frag.spv"},
-            {GLFW_KEY_5, "shaders/pixelation.frag.spv"},
-            {GLFW_KEY_6, "shaders/retro.frag.spv"},
-            {GLFW_KEY_7, "shaders/crt.frag.spv"},
-            {GLFW_KEY_8, "shaders/chromab.frag.spv"},
-            {GLFW_KEY_9, "shaders/vignette.frag.spv"},
-            {GLFW_KEY_0, "shaders/brightness.frag.spv"},
-            {GLFW_KEY_P, "shaders/bloom.frag.spv"},
-            {GLFW_KEY_G, "shaders/glitch.frag.spv"},
-            {GLFW_KEY_F, "shaders/CRT-dynamic.frag.spv"},
-            {GLFW_KEY_H, "shaders/dream.frag.spv"},
-        };
-    }
     camera = new Camera();
-    trackball = new Trackball(window->getGLFWwindow(), camera, dynamic_cast<VulkanRenderer *>(renderer));
-    currentScene = LoadScene("./assets/scenes/Scene3.xml");
+    if (renderType == RendererType::VULKAN)
+        trackball = new Trackball(window->getGLFWwindow(), camera, dynamic_cast<VulkanRenderer *>(renderer));
+
+    currentScene = LoadScene("./assets/scenes/Scene1.xml");
 
     return true;
 }
@@ -184,7 +168,8 @@ Scene *SceneManager::LoadScene(const std::string &name_) {
         auto camera_node = state_node->first_node("Camera");
         auto skybox_node = state_node->first_node("Skybox");
         auto lights_node = baseNode->first_node("Lights");
-        std::array<const char *, 6> names;
+        auto shaders_node = baseNode->first_node("Shaders");
+        std::array<const char *, 6> names{};
         LightUBO lightUBOs[10];
 
         glm::vec2 size = vRenderer->GetWindowSize();
@@ -210,6 +195,14 @@ Scene *SceneManager::LoadScene(const std::string &name_) {
         }
 
         scene->global_lighting_->numLights = index;
+
+        std::unordered_map<int, std::string> shaders;
+        for (auto node = shaders_node->first_node(); node; node = node->next_sibling()) {
+            char *c = node->first_attribute("key")->value();
+            shaders.emplace(c[0], node->first_attribute("frag")->value());
+        }
+
+        vRenderer->shaders_ = shaders;
 
         camera->Perspective(glm::radians(pers.x), size.x / size.y, pers.y, pers.z);
         camera->LookAt(eye, center, up);

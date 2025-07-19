@@ -19,12 +19,13 @@ Window::Window(const char *title, const int width, const int height, bool fullsc
         window = glfwCreateWindow(width, height, title, nullptr, nullptr);
     }
 
+    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     if (!window) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
-
 }
 
 Window::~Window() {

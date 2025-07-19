@@ -75,8 +75,8 @@ target_compile_features(MixedEngine PRIVATE cxx_std_20)
 target_precompile_headers(MixedEngine PRIVATE "src/precomp.h")
 
 file(GLOB_RECURSE ShaderSources CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/shaders/*.vert"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/shaders/*.frag"
+        "shaders/*.vert"
+        "shaders/*.frag"
 )
 
 add_shaders(MixedEngineShaders ${ShaderSources})

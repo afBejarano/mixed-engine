@@ -68,4 +68,20 @@
             <Diffuse x="0.0" y="0.0" z="1.0" w="1.0"/>
         </Light>
     </Lights>
+    <Shaders>
+        <ShaderMap key="0" frag="shaders/brightness.frag.spv"/>
+        <ShaderMap key="1" frag="shaders/nopost.frag.spv"/>
+        <ShaderMap key="2" frag="shaders/grayscale.frag.spv"/>
+        <ShaderMap key="3" frag="shaders/colorReduction.frag.spv"/>
+        <ShaderMap key="4" frag="shaders/scanlines.frag.spv"/>
+        <ShaderMap key="5" frag="shaders/pixelation.frag.spv"/>
+        <ShaderMap key="6" frag="shaders/retro.frag.spv"/>
+        <ShaderMap key="7" frag="shaders/crt.frag.spv"/>
+        <ShaderMap key="8" frag="shaders/chromab.frag.spv"/>
+        <ShaderMap key="9" frag="shaders/vignette.frag.spv"/>
+        <ShaderMap key="P" frag="shaders/bloom.frag.spv"/>
+        <ShaderMap key="G" frag="shaders/glitch.frag.spv"/>
+        <ShaderMap key="F" frag="shaders/CRT-dynamic.frag.spv"/>
+        <ShaderMap key="H" frag="shaders/dream.frag.spv"/>
+    </Shaders>
 </Scene>
