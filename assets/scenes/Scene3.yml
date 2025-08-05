@@ -1,0 +1,60 @@
+---
+scene:
+  state:
+    camera:
+      eye: { x: 0.0, y: -1.0, z: -20.0 }
+      center: { x: 0.0, y: -1.0, z: 0.0 }
+      up: { x: 0.0, y: -1.0, z: 0.0 }
+    perspective: { fov: 60.0, zNear: 0.1, zFar: 100 }
+    skybox:
+      right: "assets/skyboxes/Stars/StarSkyboxPosx.png"
+      left: "assets/skyboxes/Stars/StarSkyboxNegx.png"
+      top: "assets/skyboxes/Stars/StarSkyboxPosy.png"
+      bottom: "assets/skyboxes/Stars/StarSkyboxNegy.png"
+      front: "assets/skyboxes/Stars/StarSkyboxPosz.png"
+      back: "assets/skyboxes/Stars/StarSkyboxNegz.png"
+  actors:
+    - object:
+        obj: "./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+        basedir: "./assets/Spaceship/"
+      transform:
+        position: { x: -10.0, y: 0.0, z: 5.0 }
+        orientation: { x: 180.0, y: 0.0, z: 0.0 }
+        scale: { x: 1.0, y: 1.0, z: 1.0 }
+    - object:
+        obj: "./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+        basedir: "./assets/Spaceship/"
+      transform:
+        position: { x: 10.0, y: 0.0, z: 5.0 }
+        orientation: { x: 180.0, y: 0.0, z: 0.0 }
+        scale: { x: 1.0, y: 1.0, z: 1.0 }
+    - object:
+        obj: "./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+        basedir: "./assets/Spaceship/"
+      transform:
+        position: { x: 0.0, y: 0.0, z: -5.0 }
+        orientation: { x: 180.0, y: 0.0, z: 0.0 }
+        scale: { x: 1.0, y: 1.0, z: 1.0 }
+  lights:
+    - position: { x: 15.0, y: -10.0, z: 0.0, w: 1.0 }
+      diffuse: { x: 5.0, y: 0.0, z: 0.0, w: 1.0 }
+    - position: { x: 0.0, y: -10.0, z: 0.0, w: 1.0 }
+      diffuse: { x: 0.0, y: 5.0, z: 0.0, w: 1.0 }
+    - position: { x: -15.0, y: -10.0, z: 0.0, w: 1.0 }
+      diffuse: { x: 0.0, y: 0.0, z: 1.0, w: 1.0 }
+  shaders:
+    "0": "shaders/brightness.frag.spv"
+    "1": "shaders/nopost.frag.spv"
+    "2": "shaders/grayscale.frag.spv"
+    "3": "shaders/colorReduction.frag.spv"
+    "4": "shaders/scanlines.frag.spv"
+    "5": "shaders/pixelation.frag.spv"
+    "6": "shaders/retro.frag.spv"
+    "7": "shaders/crt.frag.spv"
+    "8": "shaders/chromab.frag.spv"
+    "9": "shaders/vignette.frag.spv"
+    "P": "shaders/bloom.frag.spv"
+    "G": "shaders/glitch.frag.spv"
+    "F": "shaders/CRT-dynamic.frag.spv"
+    "H": "shaders/dream.frag.spv"
+

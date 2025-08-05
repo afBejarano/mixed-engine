@@ -8,7 +8,14 @@
 #include <render/Renderer.h>
 #include <render/Scene.h>
 #include <window/Window.h>
+#include <yaml-cpp/node/node.h>
 
+struct CameraAction {
+    int key;
+    glm::vec3 vector;
+    float speed;
+    bool modifiesCameraTarget;
+};
 
 class SceneManager {
 public:
@@ -28,25 +35,39 @@ public:
         SCENE6 = 6
     };
 
+    enum CAMERA_TYPE {
+        TRACKBALL = 0,
+        CAMERA = 1
+    };
+
     void ChangeScene(SCENE_NUMBER scene_);
 
 private:
     RendererType renderType;
-    Window* window;
-    Scene* currentScene;
-    class Timer* timer;
+    Window* window{};
+    Scene* currentScene{};
+    class Timer* timer{};
     Camera* camera;
     Trackball* trackball;
 
-    glm::vec3 camPos;
-    glm::vec3 camTarget;
-    glm::vec3 camUp;
+    glm::vec3 camPos{};
+    glm::vec3 camTarget{};
+    glm::vec3 camUp{};
 
-    int currentSceneNumber;
+    CAMERA_TYPE camType;
 
-    Renderer* renderer;
-    unsigned int fps;
-    bool isRunning;
+    int currentSceneNumber{};
+
+    Renderer* renderer{};
+    unsigned int fps{};
+    bool isRunning{};
     void BuildScene(SCENE_NUMBER scene_);
+
+    void LoadCamera(const YAML::Node &node);
+
+    void LoadPerspective(const YAML::Node &node) const;
+
+    void LoadState(const YAML::Node &node, Scene *scene, VulkanRenderer *vr);
+
     Scene* LoadScene(const std::string &name_);
 };

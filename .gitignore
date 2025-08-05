@@ -1,14 +1,37 @@
-CMakeLists.txt.user
+# Build directories
+build/
+out/
+cmake-build-*/
+
+# Bootstrapped dependencies
+external/src/
+deps/src/
+external/archives/
+deps/.bootstrap.json
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Compiled files
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# CMake files
 CMakeCache.txt
-CMakeFiles
-CMakeScripts
-Testing
-Makefile
+CMakeFiles/
 cmake_install.cmake
-install_manifest.txt
-compile_commands.json
-CTestTestfile.cmake
-_deps
-CMakeUserPresets.json
-cmake-build-debug
-.idea
+Makefile

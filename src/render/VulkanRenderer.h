@@ -165,7 +165,7 @@ public:
 
     void HandleShaderSwitch(int key);
 
-    std::array<const char *, 6> cubemap_{};
+    std::array<std::string, 6> cubemap_{};
 
     void CreateSkyboxResources();
 
@@ -343,7 +343,7 @@ private:
 
     Skybox skybox_{};
 
-    void CreateSkyboxImage(const std::array<const char *, 6> &cubemap_paths);
+    void CreateSkyboxImage(const std::array<std::string, 6> &cubemap_paths);
 
     void RenderSkybox() const;
 

@@ -43,8 +43,9 @@ void ObjectComponent::loadObj() {
     std::vector<tinyobj::material_t> materials;
 
     std::string err;
+    std::string warn;
 
-    bool ret = LoadObj(&attrib_t, &shapes, &materials, &err, obj_, basedir_, true);
+    bool ret = LoadObj(&attrib_t, &shapes, &materials, &warn, &err, obj_, basedir_);
     if (!err.empty()) {
         std::cerr << "ERR: " << err << std::endl;
     }
@@ -68,14 +69,14 @@ void ObjectComponent::loadObj() {
 
     std::unordered_map<oVertex, int, VertexHash> indices;
 
-    for (const auto &[name, mesh]: shapes) {
+    for (const auto &shape: shapes) {
         Mesh m;
-        m.materialId = mesh.material_ids[0];
-        for (int i = 0; i < mesh.indices.size(); i++) {
+        m.materialId = shape.mesh.material_ids[0];
+        for (int i = 0; i < shape.mesh.indices.size(); i++) {
             oVertex v{
-                vertices.at(mesh.indices[i].vertex_index),
-                !normals.empty() ? normals.at(mesh.indices[i].normal_index) : glm::vec3(0),
-                texCoords.at(mesh.indices[i].texcoord_index)
+                vertices.at(shape.mesh.indices[i].vertex_index),
+                !normals.empty() ? normals.at(shape.mesh.indices[i].normal_index) : glm::vec3(0),
+                texCoords.at(shape.mesh.indices[i].texcoord_index)
             };
             if (auto index = indices.find(v); index != indices.end()) {
                 m.indices.push_back(index->second);

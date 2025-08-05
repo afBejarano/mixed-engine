@@ -8,48 +8,25 @@ find_package(Vulkan REQUIRED)
 
 include(cmake/Shaders.cmake)
 
-include(FetchContent)
-
+# Include directories for bootstrapped dependencies
 include_directories(external)
+include_directories(external/src)
 
-FetchContent_Declare(
-        glm
-        GIT_REPOSITORY "https://github.com/g-truc/glm.git"
-        GIT_TAG "1.0.1"
-        GIT_SHALLOW TRUE
-)
+# Add subdirectories for bootstrapped libraries
+add_subdirectory(external/src/glm)
+add_subdirectory(external/src/glfw)
+add_subdirectory(external/src/spdlog)
+add_subdirectory(external/src/yaml-cpp)
 
-FetchContent_Declare(
-        glfw
-        GIT_REPOSITORY "https://github.com/glfw/glfw.git"
-        GIT_TAG "3.4"
-        GIT_SHALLOW TRUE
-)
-
-FetchContent_Declare(
-        spdlog
-        GIT_REPOSITORY "https://github.com/gabime/spdlog.git"
-        GIT_TAG "v1.15.2"
-        GIT_SHALLOW TRUE
-)
-FetchContent_Declare(
-        imgui
-        GIT_REPOSITORY "https://github.com/ocornut/imgui.git"
-        GIT_TAG "v1.92.0"
-        GIT_SHALLOW TRUE
-)
-
-FetchContent_MakeAvailable(glm glfw spdlog imgui)
-
-set(IMGUI_SOURCE_DIR ${imgui_SOURCE_DIR})
+# ImGui setup
+set(IMGUI_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/src/imgui)
 set(IMGUI_BACKENDS_DIR ${IMGUI_SOURCE_DIR}/backends)
 
-
 set(IMGUI_CORE_SOURCES
-        ${imgui_SOURCE_DIR}/imgui.cpp
-        ${imgui_SOURCE_DIR}/imgui_draw.cpp
-        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-        ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${IMGUI_SOURCE_DIR}/imgui.cpp
+        ${IMGUI_SOURCE_DIR}/imgui_draw.cpp
+        ${IMGUI_SOURCE_DIR}/imgui_widgets.cpp
+        ${IMGUI_SOURCE_DIR}/imgui_tables.cpp
 )
 
 file(GLOB_RECURSE MixedEngineSources CONFIGURE_DEPENDS
@@ -61,13 +38,17 @@ file(GLOB_RECURSE MixedEngineSources CONFIGURE_DEPENDS
 
 add_executable(MixedEngine ${MixedEngineSources} ${IMGUI_CORE_SOURCES} external/tiny_obj_loader.h)
 
-target_link_libraries(MixedEngine PRIVATE glm::glm glfw Vulkan::Vulkan spdlog::spdlog)
+target_link_libraries(MixedEngine PRIVATE glm glfw Vulkan::Vulkan spdlog::spdlog yaml-cpp)
 
 target_compile_definitions(MixedEngine PRIVATE TINYOBJLOADER_IMPLEMENTATION)
 
 target_include_directories(MixedEngine PRIVATE "src"
         ${IMGUI_SOURCE_DIR}
         ${IMGUI_BACKENDS_DIR}
+        "external/src/tiny_obj_loader"
+        "external/src/stb"
+        "external/src/rapidxml"
+        "external/src/yaml-cpp/include"
 )
 
 target_compile_features(MixedEngine PRIVATE cxx_std_20)

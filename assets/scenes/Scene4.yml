@@ -1,0 +1,122 @@
+---
+scene:
+  state:
+    camera:
+      eye: { x: 0.0, y: 15.0, z: -30.0 }
+      center: { x: 0.0, y: 0.0, z: 0.0 }
+      up: { x: 0.0, y: 1.0, z: 0.0 }
+    perspective: { fov: 75.0, zNear: 0.1, zFar: 200 }
+    skybox:
+      right: "assets/skyboxes/Stars/StarSkyboxPosx.png"
+      left: "assets/skyboxes/Stars/StarSkyboxNegx.png"
+      top: "assets/skyboxes/Stars/StarSkyboxPosy.png"
+      bottom: "assets/skyboxes/Stars/StarSkyboxNegY.png"
+      front: "assets/skyboxes/Stars/StarSkyboxPosz.png"
+      back: "assets/skyboxes/Stars/StarSkyboxnegz.png"
+  actors:
+    - object:
+        obj: "./assets/models/house-luxurious.obj"
+        basedir: "./assets/models/"
+      transform:
+        position: { x: 0.0, y: 0.0, z: 0.0 }
+        orientation: { x: 0.0, y: 0.0, z: 0.0 }
+        scale: { x: 2.0, y: 2.0, z: 2.0 }
+    - object:
+        obj: "./assets/models/house-modern.obj"
+        basedir: "./assets/models/"
+      transform:
+        position: { x: -15.0, y: 0.0, z: -10.0 }
+        orientation: { x: 0.0, y: 45.0, z: 0.0 }
+        scale: { x: 1.5, y: 1.5, z: 1.5 }
+    - object:
+        obj: "./assets/models/house-modern.obj"
+        basedir: "./assets/models/"
+      transform:
+        position: { x: 15.0, y: 0.0, z: -10.0 }
+        orientation: { x: 0.0, y: -45.0, z: 0.0 }
+        scale: { x: 1.5, y: 1.5, z: 1.5 }
+    - object:
+        obj: "./assets/models/gas-station.obj"
+        basedir: "./assets/models/"
+      transform:
+        position: { x: -20.0, y: 0.0, z: 15.0 }
+        orientation: { x: 0.0, y: 90.0, z: 0.0 }
+        scale: { x: 1.0, y: 1.0, z: 1.0 }
+    - object:
+        obj: "./assets/models/house-small.obj"
+        basedir: "./assets/models/"
+      transform:
+        position: { x: 20.0, y: 0.0, z: 15.0 }
+        orientation: { x: 0.0, y: -90.0, z: 0.0 }
+        scale: { x: 1.0, y: 1.0, z: 1.0 }
+    - object:
+        obj: "./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+        basedir: "./assets/Spaceship/"
+      transform:
+        position: { x: 0.0, y: 20.0, z: 0.0 }
+        orientation: { x: 0.0, y: 45.0, z: 0.0 }
+        scale: { x: 2.0, y: 2.0, z: 2.0 }
+    - object:
+        obj: "./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+        basedir: "./assets/Spaceship/"
+      transform:
+        position: { x: -30.0, y: 10.0, z: 0.0 }
+        orientation: { x: 0.0, y: -90.0, z: 0.0 }
+        scale: { x: 1.0, y: 1.0, z: 1.0 }
+    - object:
+        obj: "./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+        basedir: "./assets/Spaceship/"
+      transform:
+        position: { x: 30.0, y: 10.0, z: 0.0 }
+        orientation: { x: 0.0, y: 90.0, z: 0.0 }
+        scale: { x: 1.0, y: 1.0, z: 1.0 }
+    - object:
+        obj: "./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+        basedir: "./assets/Spaceship/"
+      transform:
+        position: { x: 0.0, y: -5.0, z: -30.0 }
+        orientation: { x: 0.0, y: 0.0, z: 0.0 }
+        scale: { x: 1.0, y: 1.0, z: 1.0 }
+    - object:
+        obj: "./assets/Spider/spider.obj"
+        basedir: "./assets/Spider/"
+      transform:
+        position: { x: 20.0, y: 0.0, z: 20.0 }
+        orientation: { x: 0.0, y: 0.0, z: 0.0 }
+        scale: { x: 0.05, y: 0.05, z: 0.05 }
+    - object:
+        obj: "./assets/Skull/12140_Skull_v3_L2.obj"
+        basedir: "./assets/Skull/"
+      transform:
+        position: { x: -20.0, y: 0.0, z: 20.0 }
+        orientation: { x: 90.0, y: 0.0, z: 180.0 }
+        scale: { x: 0.1, y: 0.1, z: 0.1 }
+  lights:
+    - position: { x: 0.0, y: 15.0, z: 0.0, w: 1.0 }
+      diffuse: { x: 1.0, y: 1.0, z: 1.0, w: 1.0 }
+    - position: { x: 30.0, y: 10.0, z: 0.0, w: 1.0 }
+      diffuse: { x: 1.0, y: 0.2, z: 0.2, w: 1.0 }
+    - position: { x: -30.0, y: 10.0, z: 0.0, w: 1.0 }
+      diffuse: { x: 0.2, y: 0.2, z: 1.0, w: 1.0 }
+    - position: { x: 0.0, y: 10.0, z: 30.0, w: 1.0 }
+      diffuse: { x: 0.2, y: 1.0, z: 0.2, w: 1.0 }
+    - position: { x: 0.0, y: 20.0, z: -30.0, w: 1.0 }
+      diffuse: { x: 0.8, y: 0.2, z: 0.8, w: 1.0 }
+    - position: { x: 0.0, y: 5.0, z: 0.0, w: 1.0 }
+      diffuse: { x: 1.0, y: 0.5, z: 0.0, w: 1.0 }
+  shaders:
+    "0": "shaders/brightness.frag.spv"
+    "1": "shaders/nopost.frag.spv"
+    "2": "shaders/grayscale.frag.spv"
+    "3": "shaders/colorReduction.frag.spv"
+    "4": "shaders/scanlines.frag.spv"
+    "5": "shaders/pixelation.frag.spv"
+    "6": "shaders/retro.frag.spv"
+    "7": "shaders/crt.frag.spv"
+    "8": "shaders/chromab.frag.spv"
+    "9": "shaders/vignette.frag.spv"
+    "P": "shaders/bloom.frag.spv"
+    "G": "shaders/glitch.frag.spv"
+    "F": "shaders/CRT-dynamic.frag.spv"
+    "H": "shaders/dream.frag.spv"
+

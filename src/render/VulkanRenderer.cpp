@@ -1266,13 +1266,13 @@ void VulkanRenderer::CreateDepthResources() {
     depth_texture_.image_view = CreateImageView(depth_texture_.image, depth_format, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
-void VulkanRenderer::CreateSkyboxImage(const std::array<const char *, 6> &cubemap_paths) {
+void VulkanRenderer::CreateSkyboxImage(const std::array<std::string, 6> &cubemap_paths) {
     int tex_width, tex_height, tex_channels;
     std::vector<stbi_uc *> pixels(6);
     VkDeviceSize face_size = 0;
 
     for (size_t i = 0; i < 6; i++) {
-        pixels[i] = stbi_load(cubemap_paths[i], &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
+        pixels[i] = stbi_load(cubemap_paths[i].c_str(), &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
         if (!pixels[i])
             throw std::runtime_error("Failed to load cubemap texture: " + std::string(cubemap_paths[i]));
         if (i == 0)

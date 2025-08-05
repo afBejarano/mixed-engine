@@ -1,0 +1,53 @@
+---
+scene:
+  state:
+    camera:
+      eye: { x: 0.0, y: -1.0, z: -10.0 }
+      center: { x: 0.0, y: -1.0, z: 0.0 }
+      up: { x: 0.0, y: -1.0, z: 0.0 }
+    perspective: { fov: 60.0, zNear: 0.1, zFar: 100 }
+    skybox:
+      right: "assets/skyboxes/Underwater/Underwater Box_Posx.png"
+      left: "assets/skyboxes/Underwater/Underwater Box_Negx.png"
+      top: "assets/skyboxes/Underwater/Underwater Box_Posy.png"
+      bottom: "assets/skyboxes/Underwater/Underwater Box_Negy.png"
+      front: "assets/skyboxes/Underwater/Underwater Box_Posz.png"
+      back: "assets/skyboxes/Underwater/Underwater Box_Negz.png"
+  actors:
+    - object:
+        obj: "./assets/Spaceship/Intergalactic_Spaceship-(Wavefront).obj"
+        basedir: "./assets/Spaceship/"
+      transform:
+        position: { x: -5.0, y: 0.0, z: 0.0 }
+        orientation: { x: 0.0, y: 0.0, z: 0.0 }
+        scale: { x: 1.0, y: 1.0, z: 1.0 }
+    - object:
+        obj: "./assets/Spider/spider.obj"
+        basedir: "./assets/Spider/"
+      transform:
+        position: { x: 5.0, y: 0.0, z: 0.0 }
+        orientation: { x: 0.0, y: 90.0, z: 0.0 }
+        scale: { x: 0.05, y: 0.05, z: 0.05 }
+  lights:
+    - position: { x: 7.0, y: -3.0, z: 0.0, w: 1.0 }
+      diffuse: { x: 1.0, y: 0.0, z: 0.0, w: 1.0 }
+    - position: { x: 0.0, y: -3.0, z: 0.0, w: 1.0 }
+      diffuse: { x: 0.0, y: 1.0, z: 0.0, w: 1.0 }
+    - position: { x: -7.0, y: -3.0, z: 0.0, w: 1.0 }
+      diffuse: { x: 0.0, y: 0.0, z: 1.0, w: 1.0 }
+  shaders:
+    "0": "shaders/brightness.frag.spv"
+    "1": "shaders/nopost.frag.spv"
+    "2": "shaders/grayscale.frag.spv"
+    "3": "shaders/colorReduction.frag.spv"
+    "4": "shaders/scanlines.frag.spv"
+    "5": "shaders/pixelation.frag.spv"
+    "6": "shaders/retro.frag.spv"
+    "7": "shaders/crt.frag.spv"
+    "8": "shaders/chromab.frag.spv"
+    "9": "shaders/vignette.frag.spv"
+    "P": "shaders/bloom.frag.spv"
+    "G": "shaders/glitch.frag.spv"
+    "F": "shaders/CRT-dynamic.frag.spv"
+    "H": "shaders/dream.frag.spv"
+

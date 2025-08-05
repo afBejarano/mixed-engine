@@ -1,0 +1,66 @@
+[
+    {
+        "name": "glm",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/g-truc/glm.git",
+            "revision": "1.0.1"
+        }
+    },
+    {
+        "name": "glfw",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/glfw/glfw.git",
+            "revision": "3.4"
+        }
+    },
+    {
+        "name": "spdlog",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/gabime/spdlog.git",
+            "revision": "v1.15.2"
+        }
+    },
+    {
+        "name": "imgui",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/ocornut/imgui.git",
+            "revision": "v1.92.0"
+        }
+    },
+    {
+        "name": "tiny_obj_loader",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/tinyobjloader/tinyobjloader.git",
+            "revision": "release"
+        }
+    },
+    {
+        "name": "stb",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/nothings/stb.git",
+            "revision": "master"
+        }
+    },
+    {
+        "name": "rapidxml",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/dwd/rapidxml.git",
+            "revision": "master"
+        }
+    },
+    {
+        "name": "yaml-cpp",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/jbeder/yaml-cpp.git",
+            "revision": "master"
+        }
+    }
+] 
